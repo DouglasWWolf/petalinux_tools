@@ -1,0 +1,121 @@
+# This is the SD card we are going to write to
+# Don't run this script until you are sure this is
+# the correct device for your system!!  Failure to 
+# do so could result in your primary filesystem being
+# wiped out!
+SD=/dev/sdb
+
+
+#
+#  Check to see if the SD card exists
+#
+if [ ! -b $SD ]; then
+    echo $SD not found.  Halted.
+    exit 1
+fi
+
+if [ $(id -u) -ne 0 ]; then
+    sudo $0 $1 $2 $3 $4 $5
+    exit
+fi
+
+
+
+#
+# Ensure that there are no SD cards mounted
+#
+umount /dev/sd* 2>/dev/null
+
+
+# Tell the user what we're up to
+echo "Erasing $SD..."
+
+# Ensure that there are no file-system signatures on the card
+test -e ${SD}1 && wipefs --all ${SD}1 >/dev/null
+test -e ${SD}2 && wipefs --all ${SD}2 >/dev/null
+sleep 2
+
+# Delete all partitions
+fdisk $SD <<EOT >/dev/null 2>/dev/null
+d
+
+d
+
+d
+
+w
+EOT
+
+
+
+#
+# Create the two partitions
+#
+echo "Creating partitions..."
+fdisk $SD <<EOT >/dev/null 
+n
+p
+1
+
++512M
+n
+p
+2
+
+
+w
+EOT
+
+#
+# Create the FAT file-system for booting
+#
+echo "Creating FAT file-system..."
+mkfs.fat ${SD}1 >/dev/null
+
+
+#
+# Create the EXT4 Linux filesystem
+#
+echo "Creating EXT4 file-system..."
+mkfs.ext4 ${SD}2 >/dev/null 2>/dev/null
+
+
+#
+#  Figure out where the boot files are
+#
+if [ -f images/linux/BOOT.BIN ]; then 
+    src=images/linux
+elif [ -f linux/images/BOOT.BIN ]; then
+    src=linux/images
+else
+    echo "BOOT.BIN not found!"
+    exit 1
+fi
+
+#
+# Mount the first paritition and copy the boot files
+#
+echo "Copying boot files to ${SD}1..."
+dst=/media/sd1
+mkdir -p     $dst
+mount ${SD}1 $dst
+cp $src/BOOT.BIN $dst
+cp $src/boot.scr $dst
+cp $src/image.ub $dst
+
+#
+# Mount the second partition and copy the root filesystem
+#
+echo "Copying rootfs to ${SD}2..."
+dst=/media/sd2
+mkdir -p     $dst
+mount ${SD}2 $dst
+tarball=$(realpath $src/rootfs.tar.gz)
+cd $dst
+sudo tar -xzf $tarball
+sync;sync;
+cd - >/dev/null
+
+# We're done!
+umount ${SD}1 ${SD}2
+echo "SD create complete"

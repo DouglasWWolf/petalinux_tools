@@ -1,0 +1,19 @@
+test -z $PL_INSTALL && PL_INSTALL=/opt/Xilinx/PetaLinux/2024.2
+
+# Ensure that we're in a PetaLinux project folder
+if [ ! -f project-spec/configs/config ]; then
+    echo "This isn't a PetaLinux project" 1>&2
+    exit 1
+fi
+
+
+# Ensure that we have the PetaLinux tools sourced
+version=$(env | grep PETALINUX_VER)
+test -z $version && source ${PL_INSTALL}/settings.sh
+
+# Build PetaLinux
+petalinux-build
+
+# Create the boot files
+petalinux-package boot --u-boot
+
