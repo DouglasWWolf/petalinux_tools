@@ -8,6 +8,56 @@
 # Ensure that we have accesst to the PetaLinux tools
 test -z $PL_INSTALL && PL_INSTALL=/opt/Xilinx/PetaLinux/2024.2
 
+
+#===================================================================
+# This function is used to set configuration lines in config files
+#===================================================================
+config()
+{
+   filename=$1
+   key=$2
+   value=$3
+   
+   # This is the new line we want to insert
+   new=${key}=${value}
+
+   # Here we check for the variant where a parameter
+   # is commented out of the file and looks like
+   # "# CONFIG_param-name is not set"
+   original=$(grep "^.*${key} is not set" $filename)
+   if [ $? -eq 0 ]; then
+      sed -i "s/$original/$new/" $filename 
+      return
+   fi
+
+   # Here we check for "$key="
+   original=$(grep "^${key}=" $filename)
+   if [ $? -eq 0 ]; then
+      sed -i "s/$original/$new/" $filename
+   fi
+
+   #grep $key $filename
+}
+#===================================================================
+
+#===================================================================
+# This function sets up the root-filesystem configuration
+#===================================================================
+configure_rootfs()
+{
+    filename=$1
+    config $filename CONFIG_openssh        y
+    config $filename CONFIG_openssh-ssh    y
+    config $filename CONFIG_openssh-keygen y
+    config $filename CONFIG_openssh-sshd   y
+    config $filename CONFIG_openssh-scp    y
+
+    config $filename CONFIG_libstdcPLUSPLUS-dev y
+    config $filename CONFIG_libstdcPLUSPLUS     y
+}
+#===================================================================
+
+
 #===================================================================
 # This function is used to set configuration lines in config files
 #===================================================================
@@ -71,6 +121,8 @@ cd $project
 # Configure the machine name
 file=project-spec/configs/config
 config $file CONFIG_SUBSYSTEM_MACHINE_NAME \"versal-vpk120-reva\"
+configure_rootfs project-spec/configs/rootfs_config
+
 
 # Create basic project configuration
 petalinux-config --silentconfig --get-hw-description platform.xsa
