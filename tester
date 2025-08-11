@@ -3,29 +3,48 @@
 #===================================================================
 set_param()
 {
-   filename=$1
-   key=$2
-   value=$3
+
+    # Is the caller just setting the filename?
+    if [ "$1" == "-filename" ]; then
+        export SET_PARAM_FILENAME=$2
+        return
+    fi
+
+    # Determine the filename, key, and value
+    if  [ $# -eq 2 ] && [ ! -z $SET_PARAM_FILENAME ]; then
+        filename=$SET_PARAM_FILENAME
+        key=$1
+        value=$2
+    elif [ $# -eq 3 ]; then
+        filename=$1
+        key=$2
+        value=$3
+    else
+        echo "Illegal set_param() : $1 $2 $3"
+        return
+    fi
    
-   # This is the new line we want to insert
-   new=${key}=${value}
+    # This is the new line we want to insert
+    new=${key}=${value}
 
-   # Here we check for the variant where a parameter
-   # is commented out of the file and looks like
-   # "# CONFIG_param-name is not set"
-   original=$(grep "^#.*${key} is not set" $filename)
-   if [ $? -eq 0 ]; then
-      sed -i "s/$original/$new/" $filename 
-      return
-   fi
+    # Here we check for the variant where a parameter
+    # is commented out of the file and looks like
+    # "# CONFIG_param-name is not set"
+    original=$(grep "^#.*${key} is not set" $filename)
+    if [ $? -eq 0 ]; then
+        sed -i "s/$original/$new/" $filename 
+        return
+    fi
 
-   # Here we check for "$key="
-   original=$(grep "^${key}=" $filename)
-   if [ $? -eq 0 ]; then
-      sed -i "s/$original/$new/" $filename
-   fi
+    # Here we check for "$key="
+    original=$(grep "^${key}=" $filename)
+    if [ $? -eq 0 ]; then
+        sed -i "s/$original/$new/" $filename
+    else
+        echo ">>>>>>>>>> Cant find key $key <<<<<<<<<<"
+    fi
 
-   #grep $key $filename
+    #grep ${key}= $filename
 }
 #===================================================================
 
@@ -35,15 +54,16 @@ set_param()
 #===================================================================
 configure_rootfs()
 {
-    filename=$1
-    set_param $filename CONFIG_openssh        y
-    set_param $filename CONFIG_openssh-ssh    y
-    set_param $filename CONFIG_openssh-keygen y
-    set_param $filename CONFIG_openssh-sshd   y
-    set_param $filename CONFIG_openssh-scp    y
+    set_param -filename $1
     
-    set_param $filename CONFIG_libstdcPLUSPLUS-dev y
-    set_param $filename CONFIG_libstdcPLUSPLUS     y
+    set_param CONFIG_openssh        y
+    set_param CONFIG_openssh-ssh    y
+    set_param CONFIG_openssh-keygen y
+    set_param CONFIG_openssh-sshd   y
+    set_param CONFIG_openssh-scp    y
+    
+    set_param CONFIG_libstdcPLUSPLUS-dev y
+    set_param CONFIG_libstdcPLUSPLUS     y
 }
 #===================================================================
 
