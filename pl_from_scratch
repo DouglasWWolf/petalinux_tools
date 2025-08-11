@@ -23,12 +23,12 @@ set_param()
     # Determine the filename, key, and value
     if  [ $# -eq 2 ] && [ ! -z $SET_PARAM_FILENAME ]; then
         filename=$SET_PARAM_FILENAME
-        key=$1
-        value=$2
+             key=$1
+           value=$2
     elif [ $# -eq 3 ]; then
         filename=$1
-        key=$2
-        value=$3
+             key=$2
+           value=$3
     else
         echo "Illegal set_param() : $1 $2 $3"
         return
