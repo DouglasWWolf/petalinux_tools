@@ -112,7 +112,7 @@ mkdir -p     $dst
 mount ${SD}2 $dst
 tarball=$(realpath $src/rootfs.tar.gz)
 cd $dst
-sudo tar -xzf $tarball
+#sudo tar -xzf $tarball
 sync;sync;
 cd - >/dev/null
 
