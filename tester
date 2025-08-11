@@ -1,7 +1,7 @@
 #===================================================================
 # This function is used to set configuration lines in config files
 #===================================================================
-config()
+set_param()
 {
    filename=$1
    key=$2
@@ -13,7 +13,7 @@ config()
    # Here we check for the variant where a parameter
    # is commented out of the file and looks like
    # "# CONFIG_param-name is not set"
-   original=$(grep "^.*${key} is not set" $filename)
+   original=$(grep "^#.*${key} is not set" $filename)
    if [ $? -eq 0 ]; then
       sed -i "s/$original/$new/" $filename 
       return
@@ -29,21 +29,23 @@ config()
 }
 #===================================================================
 
+
 #===================================================================
 # This function sets up the root-filesystem configuration
 #===================================================================
 configure_rootfs()
 {
     filename=$1
-    config $filename CONFIG_openssh        y
-    config $filename CONFIG_openssh-ssh    y
-    config $filename CONFIG_openssh-keygen y
-    config $filename CONFIG_openssh-sshd   y
-    config $filename CONFIG_openssh-scp    y
-
-    config $filename CONFIG_libstdcPLUSPLUS-dev y
-    config $filename CONFIG_libstdcPLUSPLUS     y
+    set_param $filename CONFIG_openssh        y
+    set_param $filename CONFIG_openssh-ssh    y
+    set_param $filename CONFIG_openssh-keygen y
+    set_param $filename CONFIG_openssh-sshd   y
+    set_param $filename CONFIG_openssh-scp    y
+    
+    set_param $filename CONFIG_libstdcPLUSPLUS-dev y
+    set_param $filename CONFIG_libstdcPLUSPLUS     y
 }
 #===================================================================
+
 
 configure_rootfs project-spec/configs/rootfs_config
