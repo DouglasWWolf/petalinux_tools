@@ -11,7 +11,7 @@ fi
 version=$(env | grep PETALINUX_VER)
 test -z $version && source ${PL_INSTALL}/settings.sh
 
-# We do this in case ofan updated rootfs or am updated platform.xsa
+# We do this in case ofa n updated rootfs or an updated platform.xsa
 petalinux-config --silentconfig --get-hw-description platform.xsa
 petalinux-config --silentconfig -c rootfs
 
