@@ -129,8 +129,17 @@ cd $project
 file=project-spec/configs/config
 set_param $file CONFIG_SUBSYSTEM_MACHINE_NAME \"versal-vpk120-reva\"
 
+# This is the name of our startup script
+startup=startup-script
+
 # Create the "startup-script" app
-petalinux-create apps -n startup-script --template install --enable
+petalinux-create apps -n $startup --template install --enable
+
+# Copy the startup script, service, and recipe to their correct locations
+dst=project-spec/meta-user/recipes-apps/$startup
+cp $(dirname $0)/$startup/${startup}         $dst/files
+cp $(dirname $0)/$startup/${startup}.service $dst/files
+cp $(dirname $0)/$startup/${startup}.bb      $dst
 
 # Create default project configuration
 printf "\n"
