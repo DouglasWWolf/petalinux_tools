@@ -1,4 +1,4 @@
 #!/bin/sh
 echo "***********************************"
-echo " Executing /usr/bin/startup-script
+echo " Executing /usr/bin/startup-script "
 echo "***********************************"
