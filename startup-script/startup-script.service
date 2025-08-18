@@ -1,0 +1,9 @@
+[Unit]
+Description="Startup script"
+  
+[Service]
+ExecStart=/usr/bin/startup-script
+StandardOutput=journal+console
+  
+[Install]
+WantedBy=multi-user.target

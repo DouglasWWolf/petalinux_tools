@@ -74,6 +74,8 @@ configure_rootfs()
     
     set_param CONFIG_libstdcPLUSPLUS-dev y
     set_param CONFIG_libstdcPLUSPLUS     y
+
+#    set_param CONFIG_startup-script y
 }
 #===================================================================
 
@@ -126,6 +128,9 @@ cd $project
 # Configure the machine name
 file=project-spec/configs/config
 set_param $file CONFIG_SUBSYSTEM_MACHINE_NAME \"versal-vpk120-reva\"
+
+# Create the "startup-script" app
+petalinux-create apps -n startup-script --template install --enable
 
 # Create default project configuration
 printf "\n"
