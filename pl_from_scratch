@@ -137,7 +137,8 @@ petalinux-create apps -n $startup --template install --enable
 
 # Copy the startup script, service, and recipe to their correct locations
 dst=project-spec/meta-user/recipes-apps/$startup
-cp -r $(dirname $0)/$startup/* $dst
+cp -r $(dirname $0)/$startup/files $dst/files
+cp    $(dirname $0)/$startup/*.bb  $dst
 
 # Create default project configuration
 printf "\n"
