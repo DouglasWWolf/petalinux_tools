@@ -137,9 +137,7 @@ petalinux-create apps -n $startup --template install --enable
 
 # Copy the startup script, service, and recipe to their correct locations
 dst=project-spec/meta-user/recipes-apps/$startup
-cp $(dirname $0)/$startup/${startup}         $dst/files
-cp $(dirname $0)/$startup/${startup}.service $dst/files
-cp $(dirname $0)/$startup/${startup}.bb      $dst
+cp -r $(dirname $0)/$startup/* $dst
 
 # Create default project configuration
 printf "\n"
@@ -154,6 +152,10 @@ printf ">>>>>==================================<<<<<\n"
 printf ">>>>> Customizing rootfs configuration <<<<<\n"
 printf ">>>>>==================================<<<<<\n"
 configure_rootfs project-spec/configs/rootfs_config
+
+# Install our desired .bashrc file
+dst=components/yocto/layers/poky/meta/recipes-core/base-files/base-files/share
+cp $(dirname $0)/dot.bashrc $dst
 
 # Rerun petalinux-config to pick up our new rootfs settings
 printf "\n"
