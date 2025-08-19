@@ -1,2 +1,0 @@
- ssh-keygen -f "/home/wolf/.ssh/known_hosts" -R "12.12.12.12"
-
