@@ -76,6 +76,7 @@ configure_rootfs()
     set_param CONFIG_libstdcPLUSPLUS     y
 
 #    set_param CONFIG_startup-script y
+    set_param CONFIG_netcat y
 }
 #===================================================================
 
