@@ -3,16 +3,5 @@
 export PS1='\h:\w\$ '
 umask 022
 
-# You may uncomment the following lines if you want `ls' to be colorized:
-# export LS_OPTIONS='--color=auto'
-#eval `dircolors`
-#alias ls='ls $LS_OPTIONS'
-#alias ll='ls $LS_OPTIONS -l'
-#ralias l='ls $LS_OPTIONS -lA'
+export PATH=$PATH:/utils
 
-
-#
-# Some more alias to avoid making mistakes:
-# alias rm='rm -i'
-# alias cp='cp -i'
-# alias mv='mv -i'

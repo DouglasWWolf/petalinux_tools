@@ -5,8 +5,10 @@
 # write_hw_platform -fixed -include_bit -force -file platform.xsa
 #===================================================================
 
-# Ensure that we have accesst to the PetaLinux tools
+# Ensure that we have access to the PetaLinux tools
 test -z $PL_INSTALL && PL_INSTALL=/opt/Xilinx/PetaLinux/2024.2
+
+
 
 #===================================================================
 # This function is used to set configuration lines in config files
@@ -72,6 +74,8 @@ configure_rootfs()
     set_param CONFIG_openssh-sshd   y
     set_param CONFIG_openssh-scp    y
     
+    set_param CONFIG_ADD_EXTRA_USERS '"root:root;petalinux:narnia;"'
+
     set_param CONFIG_libstdcPLUSPLUS-dev y
     set_param CONFIG_libstdcPLUSPLUS     y
 
@@ -80,65 +84,103 @@ configure_rootfs()
 #===================================================================
 
 
+#===================================================================
+# This creates the bare-bones project from scratch
+#===================================================================
+create_from_scratch()
+{
+    # Was the name of the project specified?
+    if [ -z $project ]; then
+        echo "Missing project name on the command line" 1>&2
+        exit 1
+    fi
+
+    # Was the name of the XSA file specified?
+    if [ -z $xsa_file ]; then
+        echo "Missing xsa filename the command line" 1>&2
+        exit 1
+    fi
+
+    # Check to see if the project already exists
+    if [ -e $project ]; then
+        echo "$project already exists!" 1>&2
+        exit 1
+    fi
+
+    # Check to make sure the XSA file exists
+    if [ ! -f $xsa_file ]; then
+        echo "File not found: $xsa_file" 1>&2
+        exit 1
+    fi
+
+    # Create the project
+    petalinux-create project -n $project --template versal
+
+    # Make sure that project creation was successful
+    if [ ! -d $project ]; then
+        echo "petalinux-create failed!" 1>&2
+        exit 1
+    fi
+
+    # Copy the platform definition into the project folder
+    cp $xsa_file $project/platform.xsa
+
+    # CD into our project folder
+    cd $project
+
+    # Create the "startup-script" app
+    petalinux-create apps -n $startup --template install --enable
+
+    # Create the "startup-script" app
+    petalinux-create apps -n utils --template install --enable
+}
+#===================================================================
+
+
+# Find out where all of our customizations are stored
+custom_src=$(dirname $0)
+
+# This is the name of our startup script
+startup=startup-script
+
+# By default, we're not running in update only mode
+update_only=0
+
 # Fetch the command line parameters
-project=$1; shift
-xsa_file=$1; shift
-
-# Was the name of the project specified?
-if [ -z $project ]; then
-    echo "Missing project name on the command line" 1>&2
-    exit 1
+if [ "$1" == "-update" ] || [ "$1" == "--update" ]; then
+    update_only=1;
+    shift
+else
+    project=$1; shift
+    xsa_file=$1; shift
 fi
-
-if [ -z $xsa_file ]; then
-    echo "Missing xsa filename the command line" 1>&2
-    exit 1
-fi
-
-if [ -e $project ]; then
-    echo "$project already exists!" 1>&2
-    exit 1
-fi
-
-if [ ! -f $xsa_file ]; then
-    echo "File not found: $xsa_file" 1>&2
-    exit 1
-fi
-
 
 # Ensure that we have the PetaLinux tools sourced
 version=$(env | grep PETALINUX_VER)
 test -z $version && source ${PL_INSTALL}/settings.sh
 
-# Create the project
-petalinux-create project -n $project --template versal
+# Create the bare-bones skeleton project
+test $update_only -eq 0 && create_from_scratch
 
-# Make sure that project creation was successful
-if [ ! -d $project ]; then
-    echo "petalinux-create failed!" 1>&2
+# Ensure that we're in a petalinux project!
+if [ ! -f project-spec/configs/config ]; then
+    echo "This isn't a PetaLinux project" 1>&2
     exit 1
 fi
-
-# Copy the platform definition into the project folder
-cp $xsa_file $project/platform.xsa
-
-# CD into our project folder
-cd $project
 
 # Configure the machine name
 file=project-spec/configs/config
 set_param $file CONFIG_SUBSYSTEM_MACHINE_NAME \"versal-vpk120-reva\"
 
-# This is the name of our startup script
-startup=startup-script
-
-# Create the "startup-script" app
-petalinux-create apps -n $startup --template install --enable
-
 # Copy the startup script, service, and recipe to their correct locations
 dst=project-spec/meta-user/recipes-apps/$startup
-cp -r $(dirname $0)/$startup/files $dst
-cp    $(dirname $0)/$startup/*.bb  $dst
+cp -r $custom_src/$startup/files $dst
+cp    $custom_src/$startup/*.bb  $dst
+
+# Copy the "/utils" folder
+dst=project-spec/meta-user/recipes-apps/utils
+cp -r $custom_src/utils/files $dst
+cp    $custom_src/utils/*.bb  $dst
 
 # Create default project configuration
 printf "\n"
@@ -156,7 +198,7 @@ configure_rootfs project-spec/configs/rootfs_config
 
 # Install our desired .bashrc file
 dst=components/yocto/layers/poky/meta/recipes-core/base-files/base-files/share
-cp $(dirname $0)/dot.bashrc $dst
+cp $custom_src/dot.bashrc $dst
 
 # Rerun petalinux-config to pick up our new rootfs settings
 printf "\n"
