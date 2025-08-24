@@ -28,3 +28,4 @@ petalinux-build
 # Create the boot files
 petalinux-package boot --u-boot --force
 
+echo "Finished at $(date)"
