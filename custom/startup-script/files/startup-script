@@ -3,4 +3,17 @@ echo "***********************************"
 echo " Executing /usr/bin/startup-script "
 echo "***********************************"
 
+#
+# The systemd service ensures that this script runs only
+# after the EXT4 filesystem is mounted at /run/media/mmcblk0p2
+#
+
+target=/run/media/mmcblk0p2
+
+if [ -d $target/lost+found ]; then
+    mkdir -p  $target/work
+    chmod 777 $target/work
+    ln -s     $target/work /fs    
+fi
+
 ifconfig end0 12.12.12.12

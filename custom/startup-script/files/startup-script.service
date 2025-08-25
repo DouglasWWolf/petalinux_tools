@@ -1,6 +1,7 @@
 [Unit]
 Description="Startup script"
-  
+RequiresMountsFor=/run/media/mmcblk0p2
+
 [Service]
 ExecStart=/usr/bin/startup-script
 StandardOutput=journal+console
