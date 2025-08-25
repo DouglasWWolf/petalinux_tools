@@ -138,7 +138,7 @@ create_from_scratch()
 
 
 # Find out where all of our customizations are stored
-custom_src=$(dirname $0)
+custom_src=$(dirname $0)/custom
 
 # This is the name of our startup script
 startup=startup-script
