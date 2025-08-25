@@ -171,10 +171,9 @@ fi
 # Configure the machine name
 file=project-spec/configs/config
 set_param $file CONFIG_SUBSYSTEM_MACHINE_NAME \"versal-vpk120-reva\"
-set_param $file CONFIG_SUBSYSTEM_EXTRA_BOOTARGS \"uio_pdrv_genirq.of_id=generic-uio\"
 
 # Copy our custom device-tree overlay
-cp $custom/system-user.dtsir project-spec/meta-user/recipes-bsp/device-tree/files
+cp $custom_src/system-user.dtsi project-spec/meta-user/recipes-bsp/device-tree/files
 
 # Copy the startup script, service, and recipe to their correct locations
 dst=project-spec/meta-user/recipes-apps/$startup
@@ -192,6 +191,18 @@ printf ">>>>>========================================<<<<<\n"
 printf ">>>>> Creating default project configuration <<<<<\n"
 printf ">>>>>========================================<<<<<\n"
 petalinux-config --silentconfig --get-hw-description platform.xsa
+
+# Ensure that the UIO driver is included in the "EXTRA_BOOTARGS"
+file=project-spec/configs/config
+set_param $file CONFIG_SUBSYSTEM_EXTRA_BOOTARGS \"uio_pdrv_genirq.of_id=generic-uio\"
+
+# Update the project configuration
+printf "\n"
+printf ">>>>>=========================================<<<<<\n"
+printf ">>>>> Modifying default project configuration <<<<<\n"
+printf ">>>>>=========================================<<<<<\n"
+petalinux-config --silentconfig
+
 
 # Configure the rootfs settings
 printf "\n"
