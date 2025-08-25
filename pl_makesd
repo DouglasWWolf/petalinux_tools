@@ -12,29 +12,11 @@ if [ $(id -u) -ne 0 ]; then
 fi
 
 
-update_boot_partition()
-{
-    #
-    # Mount the first paritition and copy the boot files
-    #
-    echo "Copying boot files to ${SD}1..."
-    dst=/media/sd1
-    mkdir -p     $dst
-    mount ${SD}1 $dst
-    cp $src/BOOT.BIN $dst
-    cp $src/boot.scr $dst
-    cp $src/image.ub $dst
-
-    # We're done
-    umount ${SD}1
-}
-
-
-# Check to see if the user only wants to update the boot partition
-update_only=0;
-if [ "$1" == "-update" ] || [ "$1" == "--update" ]; then
+# Check to see if the user wants to format the SD card
+format=0;
+if [ "$1" == "-format" ] || [ "$1" == "--format" ]; then
     shift
-    update_only=1
+    format=1
 fi
 
 # Check for unrecognized command parameters
@@ -69,41 +51,49 @@ fi
 #
 umount /dev/sd* 2>/dev/null
 
-# If we're just updating the boot partition, make it so
-if [ $update_only -eq 1 ]; then
-    update_boot_partition
-    echo "Boot partition updated"
-    exit 0
+# If the user wants to format the SD card before putting files on it...
+if [ $format -eq 1 ]; then
+
+    # Tell the user what we're up to
+    echo "Erasing $SD..."
+
+    # Ensure that there are no file-system signatures on the card
+    test -e ${SD}1 && wipefs --all ${SD}1 >/dev/null
+    test -e ${SD}2 && wipefs --all ${SD}2 >/dev/null
+    sleep 2
+
+    # Delete all partitions
+    echo -e "d\n\nd\n\nd\n\nw" | fdisk $SD >/dev/null 2>/dev/null
+
+    # Now create the two partitions
+    echo -e "n\np\n1\n\n+512M\nn\np\n2\n\n\nw" | fdisk $SD >/dev/null
+
+    #
+    # Create the FAT file-system for booting
+    #
+    echo "Creating FAT file-system..."
+    mkfs.fat ${SD}1 >/dev/null
+
+    #
+    # Create the EXT4 Linux filesystem
+    #
+    echo "Creating EXT4 file-system..."
+    mkfs.ext4 ${SD}2 >/dev/null 2>/dev/null
 fi
 
-# Tell the user what we're up to
-echo "Erasing $SD..."
-
-# Ensure that there are no file-system signatures on the card
-test -e ${SD}1 && wipefs --all ${SD}1 >/dev/null
-test -e ${SD}2 && wipefs --all ${SD}2 >/dev/null
-sleep 2
-
-# Delete all partitions
-echo -e "d\n\nd\n\nd\n\nw" | fdisk $SD >/dev/null 2>/dev/null
-
-# Now create the two partitions
-echo -e "n\np\n1\n\n+512M\nn\np\n2\n\n\nw" | fdisk $SD >/dev/null
 
 #
-# Create the FAT file-system for booting
+# Mount the first paritition and copy the boot files into it
 #
-echo "Creating FAT file-system..."
-mkfs.fat ${SD}1 >/dev/null
+echo "Copying boot files to ${SD}1..."
+dst=/media/sd1
+mkdir -p     $dst
+mount ${SD}1 $dst
+cp $src/BOOT.BIN $dst
+cp $src/boot.scr $dst
+cp $src/image.ub $dst
+umount ${SD}1
 
-#
-# Create the EXT4 Linux filesystem
-#
-echo "Creating EXT4 file-system..."
-mkfs.ext4 ${SD}2 >/dev/null 2>/dev/null
-
-# Copy our files to the boot partition
-update_boot_partition
 
 #
 # Mount the second partition and copy the root filesystem
@@ -121,4 +111,8 @@ update_boot_partition
 
 
 # We're done!
-echo "SD create complete"
+if [ $format -eq 1 ]; then
+    echo "SD create complete"
+else
+    echo "SD update complete"
+fi

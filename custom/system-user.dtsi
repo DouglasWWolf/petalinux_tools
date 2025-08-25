@@ -2,6 +2,6 @@
 / {
 };
 
-@axi_intc_0 {
-    compatible = "generic-uio";
+&axi_intc_0 {
+  compatible = "generic-uio";
 };

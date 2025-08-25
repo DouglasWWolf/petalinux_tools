@@ -131,7 +131,7 @@ create_from_scratch()
     # Create the "startup-script" app
     petalinux-create apps -n $startup --template install --enable
 
-    # Create the "startup-script" app
+    # Create the "utils" app
     petalinux-create apps -n utils --template install --enable
 }
 #===================================================================
