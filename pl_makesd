@@ -69,7 +69,6 @@ fi
 #
 umount /dev/sd* 2>/dev/null
 
-
 # If we're just updating the boot partition, make it so
 if [ $update_only -eq 1 ]; then
     update_boot_partition
@@ -86,35 +85,10 @@ test -e ${SD}2 && wipefs --all ${SD}2 >/dev/null
 sleep 2
 
 # Delete all partitions
-fdisk $SD <<EOT >/dev/null 2>/dev/null
-d
+echo -e "d\n\nd\n\nd\n\nw" | fdisk $SD >/dev/null 2>/dev/null
 
-d
-
-d
-
-w
-EOT
-
-
-
-#
-# Create the two partitions
-#
-echo "Creating partitions..."
-fdisk $SD <<EOT >/dev/null 
-n
-p
-1
-
-+512M
-n
-p
-2
-
-
-w
-EOT
+# Now create the two partitions
+echo -e "n\np\n1\n\n+512M\nn\np\n2\n\n\nw" | fdisk $SD >/dev/null
 
 #
 # Create the FAT file-system for booting
