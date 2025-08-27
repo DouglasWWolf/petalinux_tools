@@ -2,6 +2,6 @@
 / {
 };
 
-&axi_intc_0 {
+&rtl_axi_intc_0 {
   compatible = "generic-uio";
 };
