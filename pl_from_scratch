@@ -79,7 +79,10 @@ configure_rootfs()
     set_param CONFIG_libstdcPLUSPLUS-dev y
     set_param CONFIG_libstdcPLUSPLUS     y
 
-    set_param CONFIG_netcat y
+    set_param CONFIG_netcat        y
+    set_param CONFIG_i2c-tools     y
+    set_param CONFIG_i2c-tools-dev y
+
 }
 #===================================================================
 
