@@ -22,7 +22,6 @@ program_fmc_vadj()
    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
    echo "  FMC+ VADJ set to 1.5V by startup script  "
    echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-
 }
 
 
@@ -30,30 +29,59 @@ echo "***********************************"
 echo " Executing /usr/bin/startup-script "
 echo "***********************************"
 
+# This is the partition where all our files of interest live
+part=/run/media/mmcblk0p2
+
 #
-# The systemd service ensures that this script runs only
-# after the EXT4 filesystem is mounted at /run/media/mmcblk0p2
+# The systemd service is supposed to ensures that this script 
+# runs only after the EXT4 filesystem is mounted at
+# /run/media/mmcblk0p2
 #
+# Sadly, this doesn't always work, so if we don't find it 
+# mounted, we reboot to try again
+#
+test -d $part/lost+found     || reboot
+test -d /run/media/mmcblk0p1 || reboot
 
-target=/run/media/mmcblk0p2
 
-if [ -d $target/lost+found ]; then
-    mkdir -p  $target/work
-    chmod 777 $target/work
-    ln -s     $target/work /fs    
-fi
+# Create the writable workspace
+mkdir -p  $part/work
+chmod 777 $part/work
+ln -s     $part/work /fs    
 
-target=/run/media/mmcblk0p2/release
+#
+#  If there is a system_update script, run it!
+#
+target=$part/release
 if [ -f ${target}/system_update.sh ]; then
     chmod +x ${target}/system_update.sh
     ${target}/system_update.sh $target /run/media/mmcblk0p1
 fi
 
-ifconfig end0 12.12.12.12
+#
+#  Here we configure the Ethernet interface to our
+#  desired MAC address and IPv4 address
+#
+eth=end0
+mac=$(cat $part/config/mac_address)
+echo "Setting MAC address to $mac"
+ifconfig $eth down
+ifconfig $eth hw ether $mac
+ifconfig $eth 12.12.12.12
+ifconfig $eth up
+
+#
+# Install the SSH keys into /etc/ssh
+#
+echo "Installing SSH keys"
+cp $part/config/ssh_host_ecdsa* /etc/ssh
 
 # Set the FMC+ VADJ voltage to 1.5V
 program_fmc_vadj
 
 # Launch the bash-server
 /utils/bash_server &
+
+# Don't allow systemctl to generate ssh keys
+systemctl stop sshdgenkeys
 

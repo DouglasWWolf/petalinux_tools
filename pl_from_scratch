@@ -70,7 +70,7 @@ configure_rootfs()
     
     set_param CONFIG_openssh        y
     set_param CONFIG_openssh-ssh    y
-    set_param CONFIG_openssh-keygen y
+    set_param CONFIG_openssh-keygen n
     set_param CONFIG_openssh-sshd   y
     set_param CONFIG_openssh-scp    y
     

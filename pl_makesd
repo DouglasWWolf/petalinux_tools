@@ -14,7 +14,7 @@ SD=/dev/sdb
 create_mac_address()
 {
    local bytes=$(dd if=/dev/urandom bs=5 count=1 2>/dev/null)
-   local last5=$(echo $bytes | od -An -tx1)
+   local last5=$(echo -n $bytes | od -An -tx1)
    local mac="02 $last5"
    echo $mac | tr ' ' ':'
 }
@@ -122,12 +122,25 @@ mount ${SD}2 $dst
 mkdir -p     $dst/release
 chmod    777 $dst/release
 mkdir -p     $dst/config
+
+# Make sure a mac_address file exists
 if [ ! -f $dst/config/mac_address ]; then
     echo "Creating MAC address on ${SD}2"
     create_mac_address >$dst/config/mac_address
 fi
+
+# Make sure both a public and private SSH key exist
+keyfile=$dst/config/ssh_host_ecdsa_key
+if [ ! -f $keyfile ] || [ ! -f ${keyfile}.pub ]; then
+    rm -rf $keyfile ${keyfile}.pub
+    ssh-keygen -q -N "" -t ecdsa -b256 -f $keyfile
+fi
+
+# Give the filesystem a chance to update the SD card
 sleep 2
 sync;sync
+
+# Unmount the partition so the SD card is safe to remove
 umount ${SD}2
 
 
