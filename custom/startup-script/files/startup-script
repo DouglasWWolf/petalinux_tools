@@ -47,7 +47,12 @@ test -d /run/media/mmcblk0p1 || reboot
 # Create the writable workspace
 mkdir -p  $part/work
 chmod 777 $part/work
-ln -s     $part/work /fs    
+ln -s     $part/work /fs
+
+# Create the release workspace
+mkdir -p  $part/release
+chmod 777 $part/release
+ln -s     $part/release /release
 
 #
 #  If there is a system_update script, run it!
@@ -79,9 +84,11 @@ cp $part/config/ssh_host_ecdsa* /etc/ssh
 # Set the FMC+ VADJ voltage to 1.5V
 program_fmc_vadj
 
-# Launch the bash-server
-/utils/bash_server &
-
 # Don't allow systemctl to generate ssh keys
 systemctl stop sshdgenkeys
+
+# Launch the bash-server.  We use nohup so that the
+# executable doesn't terminate when the shell executing
+# this script terminates
+/utils/bash_server
 
