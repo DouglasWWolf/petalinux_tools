@@ -1,0 +1,181 @@
+versal_pw=narnia
+versal_key=/home/wolf/pl_private_key/id_rsa
+
+# This is the name of the folder or file that holds our release
+target=$1
+test -z $target && target=.
+
+#================================================================
+# This function displays a script that, when run, will execute
+# the current script as the root user
+#================================================================
+script_preamble()
+{
+local script=/tmp/pass
+cat <<EOT
+  if [ \$(id -u) -ne 0 ]; then
+    echo "#!/bin/sh"        >$script
+    echo "echo $versal_pw" >>$script
+    chmod +x                 $script
+    export SUDO_ASKPASS=$script
+    sudo -A \$0 \$1 \$2 \$3 \$4 \$5 \$6 \$7 \$8 \$9
+    exit $?
+  fi
+EOT
+}
+#================================================================
+
+
+#================================================================
+# This function creates a script that will remove everything
+# from the /release folder
+#================================================================
+make_clean()
+{
+    script_preamble >$1
+    echo "rm -rf /release/*" >>$1
+    chmod 777 $1
+}
+#================================================================
+
+
+#================================================================
+# This function creates a script that will reboot the versal
+#================================================================
+make_reboot()
+{
+    script_preamble >$1
+    echo "reboot" >>$1
+    chmod 777 $1
+}
+#================================================================
+
+
+
+
+#================================================================
+# This function creates a script that will install everything
+# from the versal /release folder to /run/media/mmcblk0p1
+#================================================================
+make_installer()
+{
+    script_preamble >$1
+
+cat <<EOT >>$1
+    for file in /release/\*; do
+       cp \$file /run/media/mmcblk0p1
+    done
+    sync;sync
+EOT
+
+    chmod 777 $1
+}
+#================================================================
+
+
+#================================================================
+# This copies a file to the remote system
+#================================================================
+copy_to_versal()
+{
+    scp -i $versal_key $1 petalinux@$versal_ip:$2 >/dev/null
+}
+#================================================================
+
+
+#================================================================
+# Run a script remotely
+#================================================================
+run_remote_script()
+{
+    copy_to_versal $1 /tmp/script
+    ssh -i $versal_key petalinux@$versal_ip /tmp/script  
+}
+#================================================================
+
+
+# Make sure we have the versal password available
+if [ -z $versal_pw ]; then
+    echo "environment variable versal_pw not defined" 1>&2
+    exit 1
+fi
+
+# Make sure we have the versal ssh key available
+if [ -z $versal_key ]; then
+    echo "environment variable versal_key not defined" 1>&2
+    exit 1
+fi
+
+# If the versal ssh key isn't found, complain
+if [ ! -f $versal_key ]; then
+    echo "versal key file $versal_key not found" 1>&2
+    exit 1
+fi
+
+# Do we have a .tgz file we need to unzip?
+echo $target | grep -q "\.tgz$"
+if [ $? -eq 0 ]; then
+    if [ ! -f $target ]; then
+        echo "file not found: $target" 1>&2
+        exit1
+    fi
+    echo "Unzipping $target to /tmp"
+    mkdir -p /tmp/versal_release
+    rm -rf   /tmp/versal_release/*
+    tar -xzf $target -C /tmp/versal_release
+    target=/tmp/versal_release
+fi
+ 
+# Determine where our files are comming from 
+if [ -f $target/BOOT.BIN ]; then
+    src=$target
+elif [ -f $target/artifacts/BOOT.BIN ];then
+    src=$target/artifacts
+else
+    echo "Versal release not found" 1>&2
+    exit 1
+fi
+
+# Make sure we have the versal IP address
+echo "Checking connectivity..."
+if [ -z $versal_ip ]; then
+    echo "environment variable versal_ip not found, using default" 1>&2
+    versal_ip=12.12.12.12
+fi
+
+# Find out of the Versal is powered on and reachable
+ping -c1 $versal_ip >/dev/null
+if [ $? -ne 0 ]; then
+    echo "Versal board is not reachable at $versal_ip" 1>&2
+    exit
+fi
+
+# Remove all files from /release on the target
+make_clean        /tmp/script
+run_remote_script /tmp/script
+
+# Copy the files to the versal
+for file in $(ls $src); do
+    echo "Copying $file to versal..."
+    copy_to_versal $src/$file /release
+done
+
+# On the versal, copy the files to the boot partition
+echo "Installing..."
+make_installer    /tmp/script
+run_remote_script /tmp/script
+
+# Reboot the versal
+echo "Waiting for reboot to complete..."
+make_reboot       /tmp/script
+run_remote_script /tmp/script
+
+# Now wait for the reboot to complete
+while :; do
+    sleep 5
+    ping -c1 $versal_ip >/dev/null
+    if [ $? -eq 0 ]; then
+        echo "Done!"
+        exit 0
+    fi
+done
