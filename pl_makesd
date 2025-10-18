@@ -20,7 +20,17 @@ create_mac_address()
 }
 #========================================================================
 
-
+#========================================================================
+# confirm the existence of a file and complain if it doesn't exist
+#========================================================================
+confirm_file()
+{
+    if [ ! -f $1 ]; then
+        echo "$1 is missing!" 1>&2
+        exit 1
+    fi
+}
+#========================================================================
 
 # Make sure we're running via sudo
 if [ $(id -u) -ne 0 ]; then
@@ -52,16 +62,12 @@ fi
 
 
 #
-#  Figure out where the boot files are
+# Make certain that all of our artifact files exist
 #
-if [ -f images/linux/BOOT.BIN ]; then 
-    src=images/linux
-elif [ -f linux/images/BOOT.BIN ]; then
-    src=linux/images
-else
-    echo "BOOT.BIN not found!"
-    exit 1
-fi
+artifacts=artifacts
+confirm_file $artifacts/BOOT.BIN
+confirm_file $artifacts/boot.scr
+confirm_file $artifacts/image.ub
 
 #
 # Ensure that there are no SD cards mounted
@@ -106,9 +112,9 @@ echo "Copying boot files to ${SD}1..."
 dst=/media/sd1
 mkdir -p     $dst
 mount ${SD}1 $dst
-cp $src/BOOT.BIN $dst
-cp $src/boot.scr $dst
-cp $src/image.ub $dst
+cp $artifacts/BOOT.BIN $dst
+cp $artifacts/boot.scr $dst
+cp $artifacts/image.ub $dst
 umount ${SD}1
 
 

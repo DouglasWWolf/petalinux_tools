@@ -28,4 +28,25 @@ petalinux-build
 # Create the boot files
 petalinux-package boot --u-boot --force
 
+# Check to see if we have build artifacts
+if [ -f images/linux/BOOT.BIN ]; then 
+    src=images/linux
+elif [ -f linux/images/BOOT.BIN ]; then
+    src=linux/images
+else
+    echo "No build artifacts found!" 1>&2
+    exit 1
+fi
+
+# Copy the build artifacts into a folder
+dst=artifacts
+echo "Copying build artifacts to $PWD/$dst"
+mkdir -p $dst
+rm $dst/*
+cp $src/BOOT.BIN $dst
+cp $src/boot.scr $dst
+cp $src/image.ub $dst
+
+
+# Tell the world we're done!
 echo "Finished at $(date)"
