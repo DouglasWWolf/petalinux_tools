@@ -131,7 +131,7 @@ create_from_scratch()
     # CD into our project folder
     cd $project
 
-    # Create the "startup-script" app
+    # Create the "startup-script-stub" app
     petalinux-create apps -n $startup --template install --enable
 
     # Create the "utils" app
@@ -144,7 +144,7 @@ create_from_scratch()
 custom_src=$(dirname $0)/custom
 
 # This is the name of our startup script
-startup=startup-script
+startup=startup-script-stub
 
 # By default, we're not running in update only mode
 update_only=0
@@ -224,3 +224,11 @@ printf ">>>>>============================<<<<<\n"
 printf ">>>>> Creating customized rootfs <<<<<\n"
 printf ">>>>>============================<<<<<\n"
 petalinux-config --silentconfig -c rootfs
+
+
+printf "\n"
+printf ">>>>>====================================<<<<<\n"
+printf ">>>>> Adding startup script to artifacts <<<<<\n"
+printf ">>>>>====================================<<<<<\n"
+mkdir -p artifacts
+cp $custom_src/startup-script artifacts

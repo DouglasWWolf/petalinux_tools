@@ -25,9 +25,12 @@ program_fmc_vadj()
 }
 
 
-echo "***********************************"
-echo " Executing /usr/bin/startup-script "
-echo "***********************************"
+echo "**************************"
+echo " Executing startup-script "
+echo "**************************"
+
+# Create a shortcut to the config folder
+ln -s /run/media/mmcblk0p1/config /config
 
 # This is the partition where all our files of interest live
 part=/run/media/mmcblk0p2
@@ -42,6 +45,7 @@ part=/run/media/mmcblk0p2
 #
 test -d $part/lost+found     || reboot
 test -d /run/media/mmcblk0p1 || reboot
+
 
 
 # Create the writable workspace
@@ -60,8 +64,8 @@ ln -s     $part/release /release
 #  desired MAC address and IPv4 address
 #
 eth=end0
-mac=$(cat $part/config/mac_address)
- ip=$(cat $part/config/ip_address)
+mac=$(cat /config/mac_address)
+ ip=$(cat /config/ip_address)
 echo "Setting MAC address to $mac"
 echo "Setting IP to $ip"
 ifconfig $eth down
@@ -73,7 +77,10 @@ ifconfig $eth up
 # Install the SSH keys into /etc/ssh
 #
 echo "Installing SSH keys"
-cp $part/config/ssh_host_ecdsa* /etc/ssh
+cp /config/ssh_host_ecdsa_key* /etc/ssh
+chmod 600 /etc/ssh/ssh_host_ecdsa_key                
+chmod 644 /etc/ssh/ssh_host_ecdsa_key.pub            
+                                                    
 
 #
 #  If there is a system_update script, run it!
@@ -92,5 +99,4 @@ systemctl stop sshdgenkeys
 
 # Launch the admin-server. 
 /utils/admin-server.arm
-
 

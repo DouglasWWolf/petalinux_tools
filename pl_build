@@ -42,10 +42,10 @@ fi
 dst=artifacts
 echo "Copying build artifacts to $PWD/$dst"
 mkdir -p $dst
-rm $dst/*
-cp $src/BOOT.BIN $dst
-cp $src/boot.scr $dst
-cp $src/image.ub $dst
+for file in BOOT.BIN boot.scr image.ub; do
+    rm $dst/$file
+    cp $src/$file $dst
+done
 
 
 # Tell the world we're done!
