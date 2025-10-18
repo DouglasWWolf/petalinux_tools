@@ -1,5 +1,10 @@
-versal_pw=narnia
-versal_key=/home/wolf/pl_private_key/id_rsa
+#================================================================
+# pl_install - Script that installs a Petalinux release folder
+#              to the appropriate location on the Versal SD card
+#
+# Author: D. Wolf
+#================================================================
+
 
 # This is the name of the folder or file that holds our release
 target=$1
@@ -18,7 +23,7 @@ cat <<EOT
     echo "echo $versal_pw" >>$script
     chmod +x                 $script
     export SUDO_ASKPASS=$script
-    sudo -A \$0 \$1 \$2 \$3 \$4 \$5 \$6 \$7 \$8 \$9
+    sudo -A \$0 \$1 \$2 \$3 \$4 \$5 \$6 \$7 \$8 \$9 
     exit $?
   fi
 EOT
@@ -152,7 +157,7 @@ fi
 
 # Remove all files from /release on the target
 make_clean        /tmp/script
-run_remote_script /tmp/script
+run_remote_script /tmp/script 2>/dev/null
 
 # Copy the files to the versal
 for file in $(ls $src); do
