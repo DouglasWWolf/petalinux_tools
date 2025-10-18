@@ -230,5 +230,7 @@ printf "\n"
 printf ">>>>>====================================<<<<<\n"
 printf ">>>>> Adding startup script to artifacts <<<<<\n"
 printf ">>>>>====================================<<<<<\n"
-mkdir -p artifacts
-cp $custom_src/startup-script artifacts
+art=artifacts
+mkdir -p $art
+cp $custom_src/startup-script  $art
+cp $custom_src/authorized_keys $art

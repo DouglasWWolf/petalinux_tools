@@ -13,7 +13,7 @@ echo "****************************************"
 # Sadly, this doesn't always work, so if we don't find it 
 # mounted, we reboot to try again
 #
-test -d /run/media/mmcblk0p1 || reboot
+test -f /run/media/mmcblk0p1/BOOT.BIN || reboot
 
 script=/run/media/mmcblk0p1/startup-script
 test -f $script && source $script
