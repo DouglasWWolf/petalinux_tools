@@ -129,6 +129,12 @@ if [ ! -f $dst/config/mac_address ]; then
     create_mac_address >$dst/config/mac_address
 fi
 
+# Make sure the ip_address file exists
+if [ ! -f $dst/config/ip_address ]; then
+    echo "Creating IP address on ${SD}2"
+    echo "12.12.12.12" >$dst/config/ip_address
+fi
+
 # Make sure both a public and private SSH key exist
 keyfile=$dst/config/ssh_host_ecdsa_key
 if [ ! -f $keyfile ] || [ ! -f ${keyfile}.pub ]; then

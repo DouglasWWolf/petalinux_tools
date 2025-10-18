@@ -54,6 +54,27 @@ mkdir -p  $part/release
 chmod 777 $part/release
 ln -s     $part/release /release
 
+
+#
+#  Here we configure the Ethernet interface to our
+#  desired MAC address and IPv4 address
+#
+eth=end0
+mac=$(cat $part/config/mac_address)
+ ip=$(cat $part/config/ip_address)
+echo "Setting MAC address to $mac"
+echo "Setting IP to $ip"
+ifconfig $eth down
+ifconfig $eth hw ether $mac
+ifconfig $eth $ip
+ifconfig $eth up
+
+#
+# Install the SSH keys into /etc/ssh
+#
+echo "Installing SSH keys"
+cp $part/config/ssh_host_ecdsa* /etc/ssh
+
 #
 #  If there is a system_update script, run it!
 #
@@ -63,32 +84,13 @@ if [ -f ${target}/system_update.sh ]; then
     ${target}/system_update.sh $target /run/media/mmcblk0p1
 fi
 
-#
-#  Here we configure the Ethernet interface to our
-#  desired MAC address and IPv4 address
-#
-eth=end0
-mac=$(cat $part/config/mac_address)
-echo "Setting MAC address to $mac"
-ifconfig $eth down
-ifconfig $eth hw ether $mac
-ifconfig $eth 12.12.12.12
-ifconfig $eth up
-
-#
-# Install the SSH keys into /etc/ssh
-#
-echo "Installing SSH keys"
-cp $part/config/ssh_host_ecdsa* /etc/ssh
-
 # Set the FMC+ VADJ voltage to 1.5V
 program_fmc_vadj
 
 # Don't allow systemctl to generate ssh keys
 systemctl stop sshdgenkeys
 
-# Launch the bash-server.  We use nohup so that the
-# executable doesn't terminate when the shell executing
-# this script terminates
-/utils/bash_server
+# Launch the admin-server. 
+/utils/admin-server.arm
+
 
