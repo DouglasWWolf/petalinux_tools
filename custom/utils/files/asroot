@@ -15,11 +15,11 @@ if [ "$1" == "-pw" ]; then
     shift
 fi
 
-# If there was no password on the command line, fetch it from stdin
-test -z $password && read password
-
 # If there is no command to run, we're done
 test -z $1 && exit 1
+
+# If there was no password on the command line, fetch it from stdin
+test -z $password && read password
 
 # create the password script that sudo will use
 script=/tmp/pass
