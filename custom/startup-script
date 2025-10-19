@@ -98,7 +98,7 @@ chmod 600   $keyfile
 target=$part/release
 if [ -f ${target}/system_update.sh ]; then
     chmod +x ${target}/system_update.sh
-    ${target}/system_update.sh $target /run/media/mmcblk0p1
+    ${target}/system_update.sh $target /bootpart
 fi
 
 # Set the FMC+ VADJ voltage to 1.5V
