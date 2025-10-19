@@ -1,0 +1,152 @@
+#================================================================
+# pl_install - Script that installs a Petalinux release folder
+#              to the appropriate location on the Versal SD card
+#
+# Author: D. Wolf
+#================================================================
+
+
+#================================================================
+# Runs a command on the versal as the root user
+#================================================================
+asroot()
+{
+    ssh -i $versal_key ${versal_user}@$versal_ip "/utils/asroot -pw $versal_pw $1 $2 $4 $4 $5 $6 $7 $8 $9"
+}
+#================================================================
+
+
+#================================================================
+# This function creates a script that will install everything
+# from the versal /release folder to the boot partition
+#================================================================
+make_installer()
+{
+cat <<EOT >$1
+    for file in /release/\*; do
+       cp \$file /bootpart
+    done
+    sync;sync
+EOT
+
+    chmod 777 $1
+}
+#================================================================
+
+
+#================================================================
+# This copies a file to the remote system
+#================================================================
+copy_to_versal()
+{
+    scp -i $versal_key $1 ${versal_user}@$versal_ip:$2 >/dev/null
+}
+#================================================================
+
+
+
+#================================================================
+# Run a script remotely
+#================================================================
+run_remote_script()
+{
+    copy_to_versal $1 /tmp/script
+    asroot /tmp/script
+}
+#================================================================
+
+
+#================================================================
+# This does sanity-checks to ensure that all neccessary variables
+# are defined, that neccessary files exist, etc
+#================================================================
+sanity_check()
+{
+    # Make sure all the environment variables are defined
+    fail=0;
+    for var in versal_ip versal_user versal_pw versal_key; do
+       value=$(eval "echo \$${var}")
+       if [ -z $value ]; then
+           echo "environment variable $var not defined" 1>&2
+           fail=1;
+       fi
+    done
+    
+    # If one or more variables weren't defined, quit
+    test $fail -eq 1 && exit 1
+    
+    # Make sure the versal ssh private-key exists
+    if [ ! -f $versal_key ]; then
+        echo "not found: $versal_key" 1>&2
+        exit
+    fi
+    
+    # Make sure permissions on the private key are strict
+    if [ $(stat -c '%a' $versal_key) -ne 600 ]; then
+        chmod 600 $versal_key
+    fi
+}
+#================================================================
+
+# Make sure our runtime environment is good
+sanity_check
+
+# This is the name of the folder or file that holds our release
+test -z $1 && target=. || target=$1
+
+# Do we have a .tgz file we need to unzip?
+if [ "${target##*.}" == "tgz" ] && [ -f $target ]; then
+    folder=/tmp/versal_release
+    echo "Unzipping $target to $folder"
+    mkdir -p  $folder
+    chmod 777 $folder
+    rm -rf    $folder/*
+    tar -xzf $target -C $folder
+    target=$folder
+fi
+ 
+# Determine where our files are comming from 
+if [ -f $target/BOOT.BIN ]; then
+    src=$target
+elif [ -f $target/artifacts/BOOT.BIN ];then
+    src=$target/artifacts
+else
+    echo "Versal release not found" 1>&2
+    exit 1
+fi
+
+# Find out of the Versal is powered on and reachable
+echo "Checking connectivity..."
+ping -c1 $versal_ip >/dev/null
+if [ $? -ne 0 ]; then
+    echo "Versal board is not reachable at $versal_ip" 1>&2
+    exit
+fi
+
+# Remove all files from /release on the target
+asroot "rm /release/\*"
+
+# Copy the files to the versal
+for file in $(ls $src); do
+    echo "Copying $file to versal..."
+    copy_to_versal $src/$file /release
+done
+
+# On the versal, copy the files to the boot partition
+echo "Installing..."
+make_installer    /tmp/script
+run_remote_script /tmp/script
+
+# Reboot the versal
+echo "Waiting for reboot to complete..."
+asroot "reboot"
+
+# Now wait for the reboot to complete
+while :; do
+    sleep 5
+    ping -c1 $versal_ip >/dev/null
+    if [ $? -eq 0 ]; then
+        echo "Done!"
+        exit 0
+    fi
+done

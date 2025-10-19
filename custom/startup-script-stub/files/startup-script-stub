@@ -1,0 +1,23 @@
+#!/bin/sh
+
+
+echo "****************************************"
+echo " Executing /usr/bin/startup-script-stub "
+echo "****************************************"
+
+#
+# The systemd service is supposed to ensures that this script 
+# runs only after the VFAT filesystem is mounted at
+# /run/media/mmcblk0p1
+#
+# Sadly, this doesn't always work, so if we don't find it 
+# mounted, we reboot to try again
+#
+bootpart=/run/media/mmcblk0p1
+test -f $bootpart/BOOT.BIN || reboot
+
+# Create a link to the boot partition
+ln -s $bootpart /bootpart
+
+script=$bootpart/startup-script
+test -f $script && source $script

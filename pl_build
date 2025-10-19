@@ -1,0 +1,52 @@
+#===================================================================
+# An XSA file for your Vivado project can be created by running
+# the following TCL command in Vivado:
+#
+# write_hw_platform -fixed -include_bit -force -file platform.xsa
+#===================================================================
+
+test -z $PL_INSTALL && PL_INSTALL=/opt/Xilinx/PetaLinux/2024.2
+
+
+# Ensure that we're in a PetaLinux project folder
+if [ ! -f project-spec/configs/config ]; then
+    echo "This isn't a PetaLinux project" 1>&2
+    exit 1
+fi
+
+# Ensure that we have the PetaLinux tools sourced
+version=$(env | grep PETALINUX_VER)
+test -z $version && source ${PL_INSTALL}/settings.sh
+
+# We do this in case of an updated rootfs or an updated platform.xsa
+petalinux-config --silentconfig --get-hw-description platform.xsa
+petalinux-config --silentconfig -c rootfs
+
+# Build PetaLinux
+petalinux-build
+
+# Create the boot files
+petalinux-package boot --u-boot --force
+
+# Check to see if we have build artifacts
+if [ -f images/linux/BOOT.BIN ]; then 
+    src=images/linux
+elif [ -f linux/images/BOOT.BIN ]; then
+    src=linux/images
+else
+    echo "No build artifacts found!" 1>&2
+    exit 1
+fi
+
+# Copy the build artifacts into a folder
+dst=artifacts
+echo "Copying build artifacts to $PWD/$dst"
+mkdir -p $dst
+for file in BOOT.BIN boot.scr image.ub; do
+    rm $dst/$file
+    cp $src/$file $dst
+done
+
+
+# Tell the world we're done!
+echo "Finished at $(date)"

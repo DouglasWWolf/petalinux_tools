@@ -1,0 +1,236 @@
+#===================================================================
+# An XSA file for your Vivado project can be created by running
+# the following TCL command in Vivado:
+#
+# write_hw_platform -fixed -include_bit -force -file platform.xsa
+#===================================================================
+
+# Ensure that we have access to the PetaLinux tools
+test -z $PL_INSTALL && PL_INSTALL=/opt/Xilinx/PetaLinux/2024.2
+
+
+
+#===================================================================
+# This function is used to set configuration lines in config files
+#===================================================================
+set_param()
+{
+
+    # Is the caller just setting the filename?
+    if [ "$1" == "-filename" ]; then
+        export SET_PARAM_FILENAME=$2
+        return
+    fi
+
+    # Determine the filename, key, and value
+    if  [ $# -eq 2 ] && [ ! -z $SET_PARAM_FILENAME ]; then
+        filename=$SET_PARAM_FILENAME
+             key=$1
+           value=$2
+    elif [ $# -eq 3 ]; then
+        filename=$1
+             key=$2
+           value=$3
+    else
+        echo "Illegal set_param() : $1 $2 $3"
+        return
+    fi
+   
+    # This is the new line we want to insert
+    new=${key}=${value}
+
+    # Here we check for the variant where a parameter
+    # is commented out of the file and looks like
+    # "# CONFIG_param-name is not set"
+    original=$(grep "^#.*${key} is not set" $filename)
+    if [ $? -eq 0 ]; then
+        sed -i "s/$original/$new/" $filename 
+        return
+    fi
+
+    # Here we check for "$key="
+    original=$(grep "^${key}=" $filename)
+    if [ $? -eq 0 ]; then
+        sed -i "s/$original/$new/" $filename
+    else
+        echo ">>>>>>>>>> Cant find key $key <<<<<<<<<<"
+    fi
+
+    #grep ${key}= $filename
+}
+#===================================================================
+
+
+#===================================================================
+# This function sets up the root-filesystem configuration
+#===================================================================
+configure_rootfs()
+{
+    set_param -filename $1
+    
+    set_param CONFIG_openssh        y
+    set_param CONFIG_openssh-ssh    y
+    set_param CONFIG_openssh-keygen n
+    set_param CONFIG_openssh-sshd   y
+    set_param CONFIG_openssh-scp    y
+    
+    set_param CONFIG_ADD_EXTRA_USERS '"root:root;petalinux:narnia;"'
+
+    set_param CONFIG_libstdcPLUSPLUS-dev y
+    set_param CONFIG_libstdcPLUSPLUS     y
+
+    set_param CONFIG_netcat        y
+    set_param CONFIG_i2c-tools     y
+    set_param CONFIG_i2c-tools-dev y
+
+}
+#===================================================================
+
+
+#===================================================================
+# This creates the bare-bones project from scratch
+#===================================================================
+create_from_scratch()
+{
+    # Was the name of the project specified?
+    if [ -z $project ]; then
+        echo "Missing project name on the command line" 1>&2
+        exit 1
+    fi
+
+    # Was the name of the XSA file specified?
+    if [ -z $xsa_file ]; then
+        echo "Missing xsa filename the command line" 1>&2
+        exit 1
+    fi
+
+    # Check to see if the project already exists
+    if [ -e $project ]; then
+        echo "$project already exists!" 1>&2
+        exit 1
+    fi
+
+    # Check to make sure the XSA file exists
+    if [ ! -f $xsa_file ]; then
+        echo "File not found: $xsa_file" 1>&2
+        exit 1
+    fi
+
+    # Create the project
+    petalinux-create project -n $project --template versal
+
+    # Make sure that project creation was successful
+    if [ ! -d $project ]; then
+        echo "petalinux-create failed!" 1>&2
+        exit 1
+    fi
+
+    # Copy the platform definition into the project folder
+    cp $xsa_file $project/platform.xsa
+
+    # CD into our project folder
+    cd $project
+
+    # Create the "startup-script-stub" app
+    petalinux-create apps -n $startup --template install --enable
+
+    # Create the "utils" app
+    petalinux-create apps -n utils --template install --enable
+}
+#===================================================================
+
+
+# Find out where all of our customizations are stored
+custom_src=$(dirname $0)/custom
+
+# This is the name of our startup script
+startup=startup-script-stub
+
+# By default, we're not running in update only mode
+update_only=0
+
+# Fetch the command line parameters
+if [ "$1" == "-update" ] || [ "$1" == "--update" ]; then
+    update_only=1;
+    shift
+else
+    project=$1; shift
+    xsa_file=$1; shift
+fi
+
+# Ensure that we have the PetaLinux tools sourced
+version=$(env | grep PETALINUX_VER)
+test -z $version && source ${PL_INSTALL}/settings.sh
+
+# Create the bare-bones skeleton project
+test $update_only -eq 0 && create_from_scratch
+
+# Ensure that we're in a petalinux project!
+if [ ! -f project-spec/configs/config ]; then
+    echo "This isn't a PetaLinux project" 1>&2
+    exit 1
+fi
+
+# Configure the machine name
+file=project-spec/configs/config
+set_param $file CONFIG_SUBSYSTEM_MACHINE_NAME \"versal-vpk120-reva\"
+
+# Copy our custom device-tree overlay
+cp $custom_src/system-user.dtsi project-spec/meta-user/recipes-bsp/device-tree/files
+
+# Copy the startup script, service, and recipe to their correct locations
+dst=project-spec/meta-user/recipes-apps/$startup
+cp -r $custom_src/$startup/files $dst
+cp    $custom_src/$startup/*.bb  $dst
+
+# Copy the "/utils" folder
+dst=project-spec/meta-user/recipes-apps/utils
+cp -r $custom_src/utils/files $dst
+cp    $custom_src/utils/*.bb  $dst
+
+# Create default project configuration
+printf "\n"
+printf ">>>>>========================================<<<<<\n"
+printf ">>>>> Creating default project configuration <<<<<\n"
+printf ">>>>>========================================<<<<<\n"
+petalinux-config --silentconfig --get-hw-description platform.xsa
+
+# Ensure that the UIO driver is included in the "EXTRA_BOOTARGS"
+file=project-spec/configs/config
+set_param $file CONFIG_SUBSYSTEM_EXTRA_BOOTARGS \"uio_pdrv_genirq.of_id=generic-uio\"
+
+# Update the project configuration
+printf "\n"
+printf ">>>>>=========================================<<<<<\n"
+printf ">>>>> Modifying default project configuration <<<<<\n"
+printf ">>>>>=========================================<<<<<\n"
+petalinux-config --silentconfig
+
+
+# Configure the rootfs settings
+printf "\n"
+printf ">>>>>==================================<<<<<\n"
+printf ">>>>> Customizing rootfs configuration <<<<<\n"
+printf ">>>>>==================================<<<<<\n"
+configure_rootfs project-spec/configs/rootfs_config
+
+# Install our desired .bashrc file
+dst=components/yocto/layers/poky/meta/recipes-core/base-files/base-files/share
+cp $custom_src/dot.bashrc $dst
+
+# Rerun petalinux-config to pick up our new rootfs settings
+printf "\n"
+printf ">>>>>============================<<<<<\n"
+printf ">>>>> Creating customized rootfs <<<<<\n"
+printf ">>>>>============================<<<<<\n"
+petalinux-config --silentconfig -c rootfs
+
+
+printf "\n"
+printf ">>>>>====================================<<<<<\n"
+printf ">>>>> Adding startup script to artifacts <<<<<\n"
+printf ">>>>>====================================<<<<<\n"
+art=artifacts
+mkdir -p $art
+cp $custom_src/startup-script  $art
+cp $custom_src/authorized_keys $art

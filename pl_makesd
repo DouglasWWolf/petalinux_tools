@@ -1,0 +1,175 @@
+# This is the SD card we are going to write to
+# Don't run this script until you are sure this is
+# the correct device for your system!!  Failure to 
+# do so could result in your primary filesystem being
+# wiped out!
+SD=/dev/sdb
+
+
+#========================================================================
+# This function creates a MAC address where the first octet is 0x02
+# (because MAC addresses have to start with an even octet) followed by
+# five random values 
+#========================================================================
+create_mac_address()
+{
+   local bytes=$(dd if=/dev/urandom bs=5 count=1 2>/dev/null)
+   local last5=$(echo -n $bytes | od -An -tx1)
+   local mac="02 $last5"
+   echo $mac | tr ' ' ':'
+}
+#========================================================================
+
+#========================================================================
+# confirm the existence of a file and complain if it doesn't exist
+#========================================================================
+confirm_file()
+{
+    if [ ! -f $1 ]; then
+        echo "$1 is missing!" 1>&2
+        exit 1
+    fi
+}
+#========================================================================
+
+# Make sure we're running via sudo
+if [ $(id -u) -ne 0 ]; then
+    sudo $0 $1 $2 $3 $4 $5
+    exit
+fi
+
+
+# Check to see if the user wants to format the SD card
+format=0;
+if [ "$1" == "-format" ] || [ "$1" == "--format" ]; then
+    shift
+    format=1
+fi
+
+# Check for unrecognized command parameters
+if [ ! -z $1 ]; then
+    echo "Unrecognized parameters on command line" 1>&2
+    exit 1
+fi
+
+#
+#  Check to see if the SD card exists
+#
+if [ ! -b $SD ]; then
+    echo $SD not found.  Halted.
+    exit 1
+fi
+
+
+#
+# Make certain that all of our artifact files exist
+#
+artifacts=artifacts
+confirm_file $artifacts/BOOT.BIN
+confirm_file $artifacts/boot.scr
+confirm_file $artifacts/image.ub
+confirm_file $artifacts/startup-script
+
+#
+# Ensure that there are no SD cards mounted
+#
+umount /dev/sd* 2>/dev/null
+
+# If the user wants to format the SD card before putting files on it...
+if [ $format -eq 1 ]; then
+
+    # Tell the user what we're up to
+    echo "Erasing $SD..."
+
+    # Ensure that there are no file-system signatures on the card
+    test -e ${SD}1 && wipefs --all ${SD}1 >/dev/null
+    test -e ${SD}2 && wipefs --all ${SD}2 >/dev/null
+    sleep 2
+
+    # Delete all partitions
+    echo -e "d\n\nd\n\nd\n\nw" | fdisk $SD >/dev/null 2>/dev/null
+
+    # Now create the two partitions
+    echo -e "n\np\n1\n\n+512M\nn\np\n2\n\n\nw" | fdisk $SD >/dev/null
+
+    #
+    # Create the FAT file-system for booting
+    #
+    echo "Creating FAT file-system..."
+    mkfs.fat ${SD}1 >/dev/null
+
+    #
+    # Create the EXT4 Linux filesystem
+    #
+    echo "Creating EXT4 file-system..."
+    mkfs.ext4 ${SD}2 >/dev/null 2>/dev/null
+fi
+
+
+#
+# Mount the first paritition and copy the boot files into it
+#
+echo "Copying boot files to ${SD}1..."
+dst=/media/sd1
+mkdir -p     $dst
+mount ${SD}1 $dst
+cp $artifacts/BOOT.BIN        $dst
+cp $artifacts/boot.scr        $dst
+cp $artifacts/image.ub        $dst
+cp $artifacts/startup-script  $dst
+
+mkdir -p $dst/config
+
+# Ensure that the authorized keys exist
+cp $artifacts/authorized_keys $dst/config
+
+# Make sure a mac_address file exists
+if [ ! -f $dst/config/mac_address ]; then
+    echo "Creating MAC address on ${SD}1"
+    create_mac_address >$dst/config/mac_address
+fi
+
+# Make sure the ip_address file exists
+if [ ! -f $dst/config/ip_address ]; then
+    echo "Creating IP address on ${SD}1"
+    echo "12.12.12.12" >$dst/config/ip_address
+fi
+
+# Make sure both a public and private SSH key exist
+keyfile=$dst/config/ssh_host_ecdsa_key
+if [ ! -f $keyfile ] || [ ! -f ${keyfile}.pub ]; then
+    echo "Creating ssh keys on ${SD}1"
+    rm -rf $keyfile ${keyfile}.pub
+    ssh-keygen -q -N "" -t ecdsa -b256 -f $keyfile
+fi
+
+# Give the file-system a chance to flush buffers
+sleep 2;sync;sync;
+
+umount ${SD}1
+
+
+#
+# Mount the second partition and create the release folder
+#
+echo "Creating release folder on ${SD}2..."
+dst=/media/sd2
+mkdir -p     $dst
+mount ${SD}2 $dst
+mkdir -p     $dst/release
+chmod    777 $dst/release
+
+
+# Give the filesystem a chance to update the SD card
+sleep 2; sync;sync
+
+# Unmount the partition so the SD card is safe to remove
+umount ${SD}2
+
+
+# We're done!
+if [ $format -eq 1 ]; then
+    echo "SD create complete"
+else
+    echo "SD update complete"
+fi

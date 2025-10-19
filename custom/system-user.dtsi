@@ -1,0 +1,7 @@
+/include/ "system-conf.dtsi"
+/ {
+};
+
+&pl_rtl_axi_intc_0 {
+  compatible = "generic-uio";
+};

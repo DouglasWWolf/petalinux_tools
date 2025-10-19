@@ -1,0 +1,109 @@
+#!/bin/sh
+
+program_fmc_vadj()
+{
+    #i2C bus0 switch select : PMBUS1(ch0)
+    i2cset -f -y 0 0x74 0x01
+
+    # VADJ_FMC output voltage settings
+    i2ctransfer -f -y 0 w3@0x4E 0x40 0xf3 0x01
+    i2ctransfer -f -y 0 w3@0x4E 0x42 0xf3 0x01
+    #i2C bus0 switch select : PMBUS1(ch0)
+    i2cset -f -y 0 0x74 0x01
+
+    # VADJ_FMC output voltage settings
+    i2ctransfer -f -y 0 w3@0x4E 0x40 0xf3 0x01
+    i2ctransfer -f -y 0 w3@0x4E 0x42 0xf3 0x01
+    i2ctransfer -f -y 0 w3@0x4E 0x43 0x00 0x00
+    i2ctransfer -f -y 0 w3@0x4E 0x44 0x00 0x00
+    i2ctransfer -f -y 0 w3@0x4E 0x21 0x80 0x01
+    i2cset -f -y 0 0x4E 0x01 0x80
+    
+   echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+   echo "  FMC+ VADJ set to 1.5V by startup script  "
+   echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+}
+
+
+echo "**************************"
+echo " Executing startup-script "
+echo "**************************"
+
+# Create a shortcut to the config folder
+ln -s /run/media/mmcblk0p1/config /config
+
+# This is the partition where all our files of interest live
+part=/run/media/mmcblk0p2
+
+#
+# The systemd service is supposed to ensures that this script 
+# runs only after the EXT4 filesystem is mounted at
+# /run/media/mmcblk0p2
+#
+# Sadly, this doesn't always work, so if we don't find it 
+# mounted, we reboot to try again
+#
+test -d $part/lost+found              || reboot
+test -f /run/media/mmcblk0p1/BOOT.BIN || reboot
+
+# Create the writable workspace
+mkdir -p  $part/work
+chmod 777 $part/work
+ln -s     $part/work /fs
+
+# Create the release workspace
+mkdir -p  $part/release
+chmod 777 $part/release
+ln -s     $part/release /release
+
+
+#
+#  Here we configure the Ethernet interface to our
+#  desired MAC address and IPv4 address
+#
+eth=end0
+mac=$(cat /config/mac_address)
+ ip=$(cat /config/ip_address)
+echo "Setting MAC address to $mac"
+echo "Setting IP to $ip"
+ifconfig $eth down
+ifconfig $eth hw ether $mac
+ifconfig $eth $ip
+ifconfig $eth up
+
+#
+# Install the SSH keys into /etc/ssh
+#
+echo "Installing SSH keys"
+cp /config/ssh_host_ecdsa_key* /etc/ssh
+chmod 600 /etc/ssh/ssh_host_ecdsa_key                
+chmod 644 /etc/ssh/ssh_host_ecdsa_key.pub            
+                                                    
+#
+# Install authorized keys for users
+#
+echo "Installing authorization keys"
+user=petalinux
+target=/home/$user/.ssh
+keyfile=$target/authorized_keys
+mkdir -p $target
+cp /config/authorized_keys $target
+chown $user $keyfile
+chgrp $user $keyfile
+chmod 600   $keyfile
+
+#
+#  If there is a system_update script, run it!
+#
+target=$part/release
+if [ -f ${target}/system_update.sh ]; then
+    chmod +x ${target}/system_update.sh
+    ${target}/system_update.sh $target /run/media/mmcblk0p1
+fi
+
+# Set the FMC+ VADJ voltage to 1.5V
+program_fmc_vadj
+
+# Don't allow systemctl to generate ssh keys
+systemctl stop sshdgenkeys
+

@@ -1,0 +1,40 @@
+#====================================================================
+# This script runs "sudo" on the specified command, accepting the 
+# root password from stdin.
+#
+# Author: D. Wolf
+#====================================================================
+
+# We don't yet have a password
+password=
+
+# Is there a password on the command-line?
+if [ "$1" == "-pw" ]; then
+    shift
+    password=$1
+    shift
+fi
+
+# If there was no password on the command line, fetch it from stdin
+test -z $password && read password
+
+# If there is no command to run, we're done
+test -z $1 && exit 1
+
+# create the password script that sudo will use
+script=/tmp/pass
+echo "#!/bin/sh"       >$script
+echo "echo $password" >>$script
+chmod +x                $script 
+
+# SUDO will need our script to supply a password
+export SUDO_ASKPASS=$script
+
+# Run a dummy command to supress the sudo lecture
+sudo -A whoami >/dev/null 2>/dev/null
+
+# Now run the user's command
+sudo -A $1 $2 $3 $4 $5 $6 $7 $8 $9 
+
+# Remove the askpass script
+rm $script
