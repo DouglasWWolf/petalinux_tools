@@ -43,7 +43,7 @@ dst=artifacts
 echo "Copying build artifacts to $PWD/$dst"
 mkdir -p $dst
 for file in BOOT.BIN boot.scr image.ub; do
-    rm $dst/$file
+    rm -f $dst/$file
     cp $src/$file $dst
 done
 
