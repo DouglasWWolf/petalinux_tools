@@ -115,7 +115,7 @@ else
     exit 1
 fi
 
-# Find out of the Versal is powered on and reachable
+# Confirm that the Versal is powered on and reachable
 echo "Checking connectivity..."
 ping -c1 $versal_ip >/dev/null
 if [ $? -ne 0 ]; then
