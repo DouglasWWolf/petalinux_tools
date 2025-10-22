@@ -13,8 +13,21 @@ echo "****************************************"
 # Sadly, this doesn't always work, so if we don't find it 
 # mounted, we reboot to try again
 #
+partition_found=0
+for i in 1 2 3 4 5; do
+   sleep 2
+   test -f /run/media/mmblk0p1/BOOT.BIN   && partition_found=$((partition_found | 1))
+   test -d /run/media/mmblk0p2/lost+found && partition_found=$((partition_found | 2))
+   test -d /run/media/mmblk0p3/lost+found && partition_found=$((partition_found | 4))
+   test $partition_found -eq 7 && break;
+   echo "Waiting for partitions to mount..."
+done
+
+# If we didn't find our partitions, reboot
+test $partition_found -eq 7 || reboot
+
+# This is our boot partition
 bootpart=/run/media/mmcblk0p1
-test -f $bootpart/BOOT.BIN || reboot
 
 # Create a link to the boot partition
 ln -s $bootpart /bootpart

@@ -76,33 +76,47 @@ confirm_file $artifacts/startup-script
 umount /dev/sd* 2>/dev/null
 
 # If the user wants to format the SD card before putting files on it...
+# If the user wants to format the SD card before putting files on it...
 if [ $format -eq 1 ]; then
 
     # Tell the user what we're up to
     echo "Erasing $SD..."
 
-    # Ensure that there are no file-system signatures on the card
-    test -e ${SD}1 && wipefs --all ${SD}1 >/dev/null
-    test -e ${SD}2 && wipefs --all ${SD}2 >/dev/null
-    sleep 2
-
     # Delete all partitions
-    echo -e "d\n\nd\n\nd\n\nw" | fdisk $SD >/dev/null 2>/dev/null
+    echo -e "d\n\nd\n\nd\n\nd\n\nd\n\nw" | fdisk $SD >/dev/null 2>/dev/null
 
-    # Now create the two partitions
-    echo -e "n\np\n1\n\n+512M\nn\np\n2\n\n\nw" | fdisk $SD >/dev/null
+    # These are the interactive commands to create the partitions
+    part1="n\np\n\n\n+512M\n"
+    part2="n\np\n\n\n+8G\n"
+    part3="n\np\n\n\n\n"
+
+    # Now create the three partitions
+    echo -e "${part1}w" | fdisk -W always ${SD} >/dev/null 2>/dev/null
+    echo -e "${part2}w" | fdisk -W always ${SD} >/dev/null 2>/dev/null
+    echo -e "${part3}w" | fdisk -W always ${SD} >/dev/null 2>/dev/null
+
+    # Give Linux a chance to see the newly created partition devices
+    for i in 1 2 3 ; do
+        test -b ${SD}$i || partprobe /dev/${SD}$i >/dev/null 2>/dev/null
+    done
 
     #
     # Create the FAT file-system for booting
     #
     echo "Creating FAT file-system..."
-    mkfs.fat ${SD}1 >/dev/null
+    mkfs.fat ${SD}1 >/dev/null 2>/dev/null
 
     #
-    # Create the EXT4 Linux filesystem
+    # Create the EXT4 Linux filesystem for working space
     #
-    echo "Creating EXT4 file-system..."
+    echo "Creating EXT4 scratch file-system..."
     mkfs.ext4 ${SD}2 >/dev/null 2>/dev/null
+
+    #
+    # Create the EXT4 Linux filesystem for application space
+    #
+    echo "Creating EXT4 application file-system..."
+    mkfs.ext4 ${SD}3 >/dev/null 2>/dev/null
 fi
 
 
@@ -165,6 +179,18 @@ sleep 2; sync;sync
 
 # Unmount the partition so the SD card is safe to remove
 umount ${SD}2
+
+#
+# Mount the application partition and ensure the bank folders exist
+#
+echo "Creating Application folders on ${SD}3..."
+dst=/media/sd3
+mkdir -p     $dst
+mount ${SD}3 $dst
+mkdir -p ${dst}/bank0 ${dst}/bank1
+test -f ${dst}boot_bank || echo "1" >${dst}boot_bank
+sleep 2;sync;sync
+umount ${SD}3
 
 
 # We're done!
