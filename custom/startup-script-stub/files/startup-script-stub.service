@@ -1,6 +1,6 @@
 [Unit]
 Description="Startup script"
-RequiresMountsFor=/run/media/mmcblk0p1 /run/media/mmcblk0p2
+RequiresMountsFor=/run/media/mmcblk0p1 /run/media/mmcblk0p2 /run/media/mmcblk0p3
 
 [Service]
 ExecStart=/usr/bin/startup-script-stub

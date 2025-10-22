@@ -180,19 +180,6 @@ sleep 2; sync;sync
 # Unmount the partition so the SD card is safe to remove
 umount ${SD}2
 
-#
-# Mount the application partition and ensure the bank folders exist
-#
-echo "Creating Application folders on ${SD}3..."
-dst=/media/sd3
-mkdir -p     $dst
-mount ${SD}3 $dst
-mkdir -p ${dst}/bank0 ${dst}/bank1
-test -f ${dst}boot_bank || echo "1" >${dst}boot_bank
-sleep 2;sync;sync
-umount ${SD}3
-
-
 # We're done!
 if [ $format -eq 1 ]; then
     echo "SD create complete"

@@ -29,22 +29,23 @@ echo "**************************"
 echo " Executing startup-script "
 echo "**************************"
 
+# We want the boot partition mounted read only
+mount -o remount,ro /dev/mmcblk0p1 /run/media/mmcblk0p1
+
+# Make sure the basic application geometry exists
+app=/run/media/mmcblk0p3
+test -f $app/boot_bank || echo "1" >$app/boot_bank
+test -d $app/bank0     || mkdir -p $app/bank0
+test -d $app/bank1     || mkdir -p $app/bank1
+
+# We want the application partition mounted read only
+mount -o remount,ro /dev/mmcblk0p3 /run/media/mmcblk0p3
+
 # Create a shortcut to the config folder
 ln -s /run/media/mmcblk0p1/config /config
 
 # This is the partition where all our files of interest live
 part=/run/media/mmcblk0p2
-
-#
-# The systemd service is supposed to ensures that this script 
-# runs only after the EXT4 filesystem is mounted at
-# /run/media/mmcblk0p2
-#
-# Sadly, this doesn't always work, so if we don't find it 
-# mounted, we reboot to try again
-#
-test -d $part/lost+found              || reboot
-test -f /run/media/mmcblk0p1/BOOT.BIN || reboot
 
 # Create the writable workspace
 mkdir -p  $part/work
@@ -55,7 +56,6 @@ ln -s     $part/work /fs
 mkdir -p  $part/release
 chmod 777 $part/release
 ln -s     $part/release /release
-
 
 #
 #  Here we configure the Ethernet interface to our
@@ -103,7 +103,4 @@ fi
 
 # Set the FMC+ VADJ voltage to 1.5V
 program_fmc_vadj
-
-# Don't allow systemctl to generate ssh keys
-systemctl stop sshdgenkeys
 

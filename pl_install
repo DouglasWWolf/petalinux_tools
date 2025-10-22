@@ -23,10 +23,12 @@ asroot()
 make_installer()
 {
 cat <<EOT >$1
+    mount -o remount,rw /dev/mmcblk0p1 /run/media/mmcblk0p1
     for file in /release/\*; do
        cp \$file /bootpart
     done
     sync;sync
+    mount -o remount,ro /dev/mmcblk0p1 /run/media/mmcblk0p1    
 EOT
 
     chmod 777 $1
@@ -124,6 +126,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Remove all files from /release on the target
+asroot "echo dummy >/release/dummy"
 asroot "rm /release/\*"
 
 # Copy the files to the versal

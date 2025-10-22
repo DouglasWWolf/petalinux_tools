@@ -5,6 +5,9 @@ echo "****************************************"
 echo " Executing /usr/bin/startup-script-stub "
 echo "****************************************"
 
+# Don't allow systemctl to generate ssh keys
+systemctl stop sshdgenkeys
+
 #
 # The systemd service is supposed to ensures that this script 
 # runs only after the VFAT filesystem is mounted at
@@ -16,9 +19,9 @@ echo "****************************************"
 partition_found=0
 for i in 1 2 3 4 5; do
    sleep 2
-   test -f /run/media/mmblk0p1/BOOT.BIN   && partition_found=$((partition_found | 1))
-   test -d /run/media/mmblk0p2/lost+found && partition_found=$((partition_found | 2))
-   test -d /run/media/mmblk0p3/lost+found && partition_found=$((partition_found | 4))
+   test -f /run/media/mmcblk0p1/BOOT.BIN   && partition_found=$((partition_found | 1))
+   test -d /run/media/mmcblk0p2/lost+found && partition_found=$((partition_found | 2))
+   test -d /run/media/mmcblk0p3/lost+found && partition_found=$((partition_found | 4))
    test $partition_found -eq 7 && break;
    echo "Waiting for partitions to mount..."
 done
