@@ -23,12 +23,13 @@ asroot()
 make_installer()
 {
 cat <<EOT >$1
-    mount -o remount,rw /dev/mmcblk0p1 /run/media/mmcblk0p1
+    
+    /utils/remount bootpart rw
     for file in /release/\*; do
        cp \$file /bootpart
     done
     sync;sync
-    mount -o remount,ro /dev/mmcblk0p1 /run/media/mmcblk0p1    
+    /utils/remount bootpart ro
 EOT
 
     chmod 777 $1

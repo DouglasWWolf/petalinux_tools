@@ -29,11 +29,10 @@ done
 # If we didn't find our partitions, reboot
 test $partition_found -eq 7 || reboot
 
-# This is our boot partition
-bootpart=/run/media/mmcblk0p1
+# Create the links to the partitions
+ln -s run/media/mmcblk0p1 /bootpart
+ln -s run/media/mmcblk0p2 /app
+ln -s run/media/mmcblk0p3 /scratch
 
-# Create a link to the boot partition
-ln -s $bootpart /bootpart
-
-script=$bootpart/startup-script
+script=/bootpart/startup-script
 test -f $script && source $script

@@ -29,33 +29,33 @@ echo "**************************"
 echo " Executing startup-script "
 echo "**************************"
 
+# Make sure /utils is in the search path
+echo $PATH | grep -q ':/utils' || export PATH=$PATH:/utils
+
 # We want the boot partition mounted read only
-mount -o remount,ro /dev/mmcblk0p1 /run/media/mmcblk0p1
+remount bootpart ro
 
 # Make sure the basic application geometry exists
-app=/run/media/mmcblk0p3
-test -f $app/boot_bank || echo "1" >$app/boot_bank
-test -d $app/bank0     || mkdir -p $app/bank0
-test -d $app/bank1     || mkdir -p $app/bank1
+
+test -f /app/boot_bank || echo "1" >/app/boot_bank
+test -d /app/bank0     || mkdir -p  /app/bank0
+test -d /app/bank1     || mkdir -p  /app/bank1
 
 # We want the application partition mounted read only
-mount -o remount,ro /dev/mmcblk0p3 /run/media/mmcblk0p3
+remount app ro
 
 # Create a shortcut to the config folder
-ln -s /run/media/mmcblk0p1/config /config
-
-# This is the partition where all our files of interest live
-part=/run/media/mmcblk0p2
+ln -s /bootpart/config /config
 
 # Create the writable workspace
-mkdir -p  $part/work
-chmod 777 $part/work
-ln -s     $part/work /fs
+mkdir -p  /scratch/work
+chmod 777 /scratch/work
+ln -s     /scratch/work /fs
 
 # Create the release workspace
-mkdir -p  $part/release
-chmod 777 $part/release
-ln -s     $part/release /release
+mkdir -p  /scratch/release
+chmod 777 /scratch/release
+ln -s     /scratch/release /release
 
 #
 #  Here we configure the Ethernet interface to our

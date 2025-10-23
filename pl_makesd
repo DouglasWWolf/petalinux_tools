@@ -107,21 +107,21 @@ if [ $format -eq 1 ]; then
     mkfs.fat ${SD}1 >/dev/null 2>/dev/null
 
     #
-    # Create the EXT4 Linux filesystem for working space
+    # Create the EXT4 Linux filesystem for the application partition
     #
-    echo "Creating EXT4 scratch file-system..."
+    echo "Creating EXT4 application file-system..."
     mkfs.ext4 ${SD}2 >/dev/null 2>/dev/null
 
     #
-    # Create the EXT4 Linux filesystem for application space
+    # Create the EXT4 Linux filesystem for scratch space
     #
-    echo "Creating EXT4 application file-system..."
+    echo "Creating EXT4 scratch file-system..."
     mkfs.ext4 ${SD}3 >/dev/null 2>/dev/null
 fi
 
 
 #
-# Mount the first paritition and copy the boot files into it
+# Mount the boot paritition and copy the boot files into it
 #
 echo "Copying boot files to ${SD}1..."
 dst=/media/sd1
@@ -159,26 +159,34 @@ fi
 
 # Give the file-system a chance to flush buffers
 sleep 2;sync;sync;
-
 umount ${SD}1
 
 
 #
-# Mount the second partition and create the release folder
+# Mount the application partition and set it up
 #
-echo "Creating release folder on ${SD}2..."
-dst=/media/sd2
-mkdir -p     $dst
-mount ${SD}2 $dst
-mkdir -p     $dst/release
-chmod    777 $dst/release
+n=2
+echo "Setting up application partition on ${SD}$n..."
+dst=/media/sd$n
+mkdir -p      $dst
+mount ${SD}$n $dst
+test -f $dst/boot_bank || echo "1" >$dst/boot_bank
+mkdir -p $dst/bank0 $dst/bank1
+sleep 2;sync;sync
+umount ${SD}$n
 
-
-# Give the filesystem a chance to update the SD card
+#
+# Mount the scratch partition and create the release folder
+#
+n=3
+echo "Creating release folder on ${SD}$n..."
+dst=/media/sd$n
+mkdir -p      $dst
+mount ${SD}$n $dst
+mkdir -p      $dst/release
+chmod    777  $dst/release
 sleep 2; sync;sync
-
-# Unmount the partition so the SD card is safe to remove
-umount ${SD}2
+umount ${SD}$n
 
 # We're done!
 if [ $format -eq 1 ]; then
