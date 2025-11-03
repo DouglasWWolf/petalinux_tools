@@ -104,3 +104,7 @@ fi
 # Set the FMC+ VADJ voltage to 1.5V
 program_fmc_vadj
 
+# Start up low-level NSE
+/utils/llnse.arm
+
+
