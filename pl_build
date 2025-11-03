@@ -47,6 +47,8 @@ for file in BOOT.BIN boot.scr image.ub; do
     cp $src/$file $dst
 done
 
+# Create a unique identifer for this build
+date +"%Y%m%d%H%M%S" >$dst/sysid
 
 # Tell the world we're done!
 echo "Finished at $(date)"

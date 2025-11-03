@@ -131,6 +131,7 @@ cp $artifacts/BOOT.BIN        $dst
 cp $artifacts/boot.scr        $dst
 cp $artifacts/image.ub        $dst
 cp $artifacts/startup-script  $dst
+cp $artifacts/sysid           $dst
 
 mkdir -p $dst/config
 
