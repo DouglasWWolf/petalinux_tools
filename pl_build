@@ -48,7 +48,17 @@ for file in BOOT.BIN boot.scr image.ub; do
 done
 
 # Create a unique identifer for this build
-date +"%Y%m%d%H%M%S" >$dst/sysid
+unique_id=$(date +"%Y%m%d%H%M%S")
+echo $unique_id >$dst/sysid
+
+# Now create a tarball of the artifacts folder
+cd $dst
+tar -czf ../${unique_id}.tgz *
+cd - >/dev/null
+
+# If our archive folder exists, copy the tarball into it
+archive=~/pl_build_archive
+test -d $archive && cp ${unique_id}.tgz $archive
 
 # Tell the world we're done!
 echo "Finished at $(date)"

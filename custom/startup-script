@@ -88,7 +88,7 @@ chmod 600   $keyfile
 
 # Make sure the sysid file ends up in /etc
 cp /bootpart/sysid /etc
-chmod 666 /etc/sysid
+chmod 644 /etc/sysid
 
 #
 #  If there is a system_update script, run it!
