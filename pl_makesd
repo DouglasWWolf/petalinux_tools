@@ -125,18 +125,13 @@ fi
 #
 echo "Copying boot files to ${SD}1..."
 dst=/media/sd1
-mkdir -p     $dst
-mount ${SD}1 $dst
-cp $artifacts/BOOT.BIN        $dst
-cp $artifacts/boot.scr        $dst
-cp $artifacts/image.ub        $dst
-cp $artifacts/startup-script  $dst
-cp $artifacts/sysid           $dst
-
+mkdir -p        $dst
+mount ${SD}1    $dst
+for file in (ls $artifacts); do
+    cp $artifacts/$file $dst
+done
+# Ensure that the config subdir exists in the boot partition
 mkdir -p $dst/config
-
-# Ensure that the authorized keys exist
-cp $artifacts/authorized_keys $dst/config
 
 # Make sure a mac_address file exists
 if [ ! -f $dst/config/mac_address ]; then

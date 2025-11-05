@@ -81,7 +81,7 @@ user=petalinux
 target=/home/$user/.ssh
 keyfile=$target/authorized_keys
 mkdir -p $target
-cp /config/authorized_keys $target
+cp /bootpart/authorized_keys $target
 chown $user $keyfile
 chgrp $user $keyfile
 chmod 600   $keyfile
@@ -89,6 +89,14 @@ chmod 600   $keyfile
 # Make sure the sysid file ends up in /etc
 cp /bootpart/sysid /etc
 chmod 644 /etc/sysid
+
+# Make sure the memory map file ends up in /etc
+cp  /bootpart/memory.map /etc
+chmod 644 /etc/memory.map
+
+# Make sure there's a place to store named fifos
+mkdir -p /etc/fifos
+chmod 666 /etc/fifos
 
 #
 #  If there is a system_update script, run it!
@@ -103,6 +111,10 @@ fi
 program_fmc_vadj
 
 # Start up low-level NSE
-/utils/llnse.arm
+/utils/llnse.arm &
+
+# If this script exits, it will take the child processes we
+# just launched with it.   Don't allow this script to exit!
+sleep infinity
 
 

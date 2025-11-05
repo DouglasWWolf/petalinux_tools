@@ -8,7 +8,61 @@
 # Ensure that we have access to the PetaLinux tools
 test -z $PL_INSTALL && PL_INSTALL=/opt/Xilinx/PetaLinux/2024.2
 
+# We don't yet have filenames for these
+xsa_file=
+memory_map=
 
+#===================================================================
+# Display an error in red, then quit
+#===================================================================
+fatal()
+{
+    local RED='\033[0;31m'
+    local NC='\033[0m'
+
+    echo
+    echo -e "${RED}$1 $2 $3 $4 $5 $6${NC}" 1>&2
+    exit 1
+}
+#===================================================================
+
+
+#===================================================================
+# find_xsa_file - Finds an XSA file and matching memory.map.
+#
+# Sets the variables "xsa_file" and "memory_map_file"
+#===================================================================
+find_xsa_file()
+{
+    # This is where we should start looking
+    local dir=$1
+
+    # Does the directory exist?
+    test -d $dir || fatal "directory not found: $dir"
+
+    # Is there an XSA in this folder?
+    local xsa=$(find $dir/*.xsa 2>/dev/null)
+
+    # If not, is there an XSA in the impl_1 subfolder?
+    if [ -z $xsa ]; then
+        xsa=$(find $dir/*.runs/impl_1/*.xsa 2>/dev/null)
+    fi
+
+    # If we didn't find an XSA, complain
+    test -z $xsa && fatal "No XSA found in $dir"
+
+    # Is the XSA we found a regular file?
+    test -f $xsa || fatal "No XSA found in $dir" 
+
+    # Does that folder also contain a memory map?
+    dir=$(dirname $xsa)
+    test -f $dir/memory.map || fatal "No memory.map found in $dir"
+    
+    # Set the variables that tell the world where our files are
+    xsa_file=$xsa
+    memory_map_file=$dir/memory.map
+}
+#===================================================================
 
 #===================================================================
 # This function is used to set configuration lines in config files
@@ -93,40 +147,28 @@ configure_rootfs()
 create_from_scratch()
 {
     # Was the name of the project specified?
-    if [ -z $project ]; then
-        echo "Missing project name on the command line" 1>&2
-        exit 1
-    fi
+    test -z $project && fatal "Missing project name on the command line"
 
-    # Was the name of the XSA file specified?
-    if [ -z $xsa_file ]; then
-        echo "Missing xsa filename the command line" 1>&2
-        exit 1
-    fi
+    # Was the name of the XSA directory specified?
+    test -z $xsa_dir && fatal "Missing xsa directory on the command line"
 
     # Check to see if the project already exists
-    if [ -e $project ]; then
-        echo "$project already exists!" 1>&2
-        exit 1
-    fi
+    test -e $project && fatal "$project already exists!"
 
-    # Check to make sure the XSA file exists
-    if [ ! -f $xsa_file ]; then
-        echo "File not found: $xsa_file" 1>&2
-        exit 1
-    fi
+    # Determine the full path name of the XSA file and memory map
+    find_xsa_file $xsa_dir
 
     # Create the project
     petalinux-create project -n $project --template versal
 
     # Make sure that project creation was successful
-    if [ ! -d $project ]; then
-        echo "petalinux-create failed!" 1>&2
-        exit 1
-    fi
+    test -d $project || fatal "petalinux-create failed!"
 
-    # Copy the platform definition into the project folder
-    cp $xsa_file $project/platform.xsa
+    # Create the artifacts folder
+    mkdir $project/artifacts
+
+    # Copy the XSA and memory map to where they go
+    update_xsa $project
 
     # CD into our project folder
     cd $project
@@ -140,6 +182,23 @@ create_from_scratch()
 #===================================================================
 
 
+#===================================================================
+# Update the XSA file and the memory.map file
+#===================================================================
+update_xsa()
+{
+    target=$1
+    find_xsa_file $xsa_dir
+    
+    echo "Copying $xsa_file to $target"
+    cp $xsa_file $target
+    
+    echo "Copying $memory_map_file to ${target}/artifacts"
+    cp $memory_map_file ${target}/artifacts    
+}
+#===================================================================
+
+
 # Find out where all of our customizations are stored
 custom_src=$(dirname $0)/custom
 
@@ -147,28 +206,34 @@ custom_src=$(dirname $0)/custom
 startup=startup-script-stub
 
 # By default, we're not running in update only mode
-update_only=0
+create_from_scratch=0
 
 # Fetch the command line parameters
 if [ "$1" == "-update" ] || [ "$1" == "--update" ]; then
-    update_only=1;
-    shift
+    create_from_scratch=0
+    xsa_dir=$2
+    shift; shift
 else
+    create_from_scratch=1
     project=$1; shift
-    xsa_file=$1; shift
+    xsa_dir=$1; shift
 fi
 
 # Ensure that we have the PetaLinux tools sourced
 version=$(env | grep PETALINUX_VER)
 test -z $version && source ${PL_INSTALL}/settings.sh
+echo
+
 
 # Create the bare-bones skeleton project
-test $update_only -eq 0 && create_from_scratch
+test $create_from_scratch -eq 1 && create_from_scratch
 
 # Ensure that we're in a petalinux project!
-if [ ! -f project-spec/configs/config ]; then
-    echo "This isn't a PetaLinux project" 1>&2
-    exit 1
+test -f project-spec/configs/config || fatal "This isn't a PetaLinux project" 
+
+# If we have an xsa directory, update the XSA
+if [ $create_from_scratch -eq 0 ] && [ ! -z $xsa_dir ]; then
+    update_xsa .
 fi
 
 # Configure the machine name

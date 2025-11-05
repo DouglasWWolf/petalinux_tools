@@ -108,7 +108,7 @@ if [ "${target##*.}" == "tgz" ] && [ -f $target ]; then
     target=$folder
 fi
  
-# Determine where our files are comming from 
+# Determine where our files are coming from 
 if [ -f $target/BOOT.BIN ]; then
     src=$target
 elif [ -f $target/artifacts/BOOT.BIN ];then
