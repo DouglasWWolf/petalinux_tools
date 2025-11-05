@@ -28,8 +28,6 @@ if [ ! -b ${SD}1 ]; then
     echo "${SD}1 doesn't exist!" 1>&2
 fi
 
-# Create a tiny script that records our SD device
-
 
 #========================================================================
 # This function creates a MAC address where the first octet is 0x02
