@@ -127,9 +127,10 @@ echo "Copying boot files to ${SD}1..."
 dst=/media/sd1
 mkdir -p        $dst
 mount ${SD}1    $dst
-for file in (ls $artifacts); do
+for file in $(ls $artifacts); do
     cp $artifacts/$file $dst
 done
+
 # Ensure that the config subdir exists in the boot partition
 mkdir -p $dst/config
 
