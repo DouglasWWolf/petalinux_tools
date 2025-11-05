@@ -96,7 +96,7 @@ chmod 644 /etc/memory.map
 
 # Make sure there's a place to store named fifos
 mkdir -p /etc/fifos
-chmod 666 /etc/fifos
+chmod 777 /etc/fifos
 
 #
 #  If there is a system_update script, run it!
