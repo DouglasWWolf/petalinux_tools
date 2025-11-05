@@ -3,7 +3,32 @@
 # the correct device for your system!!  Failure to 
 # do so could result in your primary filesystem being
 # wiped out!
-SD=/dev/sdb
+
+# Make sure we're running via sudo
+if [ $(id -u) -eq 0 ] && [ -f sd.tmp ]; then
+    source ./sd.tmp
+    rm     ./sd.tmp
+else
+    echo "SD_CARD=$SD_CARD" >sd.tmp
+    sudo $0 $1 $2 $3 $4 $5
+    exit
+fi
+
+# Is SD_CARD defined?
+if [ -z ${SD_CARD} ]; then
+    echo "SD_CARD not defined!" 1>&2
+    exit 1
+fi
+
+# This is the SD-card device we'll write to
+SD=$SD_CARD;
+
+# Does the SD-card device exist?s
+if [ ! -b ${SD}1 ]; then
+    echo "${SD}1 doesn't exist!" 1>&2
+fi
+
+# Create a tiny script that records our SD device
 
 
 #========================================================================
@@ -32,11 +57,7 @@ confirm_file()
 }
 #========================================================================
 
-# Make sure we're running via sudo
-if [ $(id -u) -ne 0 ]; then
-    sudo $0 $1 $2 $3 $4 $5
-    exit
-fi
+
 
 
 # Check to see if the user wants to format the SD card
