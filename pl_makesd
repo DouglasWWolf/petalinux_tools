@@ -24,8 +24,8 @@ fi
 SD=$SD_CARD;
 
 # Does the SD-card device exist?s
-if [ ! -b ${SD}1 ]; then
-    echo "${SD}1 doesn't exist!" 1>&2
+if [ ! -b ${SD} ]; then
+    echo "${SD} doesn't exist!" 1>&2
 fi
 
 
@@ -55,8 +55,10 @@ confirm_file()
 }
 #========================================================================
 
-
-
+#
+# Ensure that there are no SD cards mounted
+#
+umount /dev/sd* 2>/dev/null
 
 # Check to see if the user wants to format the SD card
 format=0;
@@ -80,6 +82,19 @@ if [ ! -b $SD ]; then
 fi
 
 
+# If we're not formatting the card, let's check to see if 
+# the three partitions exists
+if [ $format -eq 0 ]; then
+    expected_partitions=3
+    for i in $(seq 1 $expected_partitions); do
+        if [ ! -b ${SD}$i ]; then
+            echo "This SD card appears to be missing partitions.  Halting" 1>&2
+            exit 1
+        fi
+    done
+fi
+
+
 #
 # Make certain that all of our artifact files exist
 #
@@ -89,10 +104,6 @@ confirm_file $artifacts/boot.scr
 confirm_file $artifacts/image.ub
 confirm_file $artifacts/startup-script
 
-#
-# Ensure that there are no SD cards mounted
-#
-umount /dev/sd* 2>/dev/null
 
 # If the user wants to format the SD card before putting files on it...
 # If the user wants to format the SD card before putting files on it...
@@ -108,7 +119,7 @@ if [ $format -eq 1 ]; then
     part1="n\np\n\n\n+512M\n"
     part2="n\np\n\n\n+8G\n"
     part3="n\np\n\n\n\n"
-
+    
     # Now create the three partitions
     echo -e "${part1}w" | fdisk -W always ${SD} >/dev/null 2>/dev/null
     echo -e "${part2}w" | fdisk -W always ${SD} >/dev/null 2>/dev/null
