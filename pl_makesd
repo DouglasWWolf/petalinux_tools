@@ -1,8 +1,7 @@
-# This is the SD card we are going to write to
-# Don't run this script until you are sure this is
-# the correct device for your system!!  Failure to 
-# do so could result in your primary filesystem being
-# wiped out!
+# Make sure $SD_CARD defines the SD card we are going to write
+# to.  Don't run this script until you are sure this is the
+# correct device for your system!!  Failure to do so could
+# result in your primary filesystem being wiped out!!
 
 # Make sure we're running via sudo
 if [ $(id -u) -eq 0 ] && [ -f sd.tmp ]; then
@@ -73,17 +72,23 @@ if [ ! -z $1 ]; then
     exit 1
 fi
 
-#
 #  Check to see if the SD card exists
-#
 if [ ! -b $SD ]; then
     echo $SD not found.  Halted.
     exit 1
 fi
 
+# Make sure ssh-keygen exists
+keygen=$(which ssh-keygen)
+if [ -z $keygen ]; then
+    echo "You need ssh-keygen installed to run this"
+    echo "Try: sudo apt install openssh-client"
+    exit 1
+fi
 
-# If we're not formatting the card, let's check to see if 
-# the three partitions exists
+
+# If we're not formatting the card, let's make sure 
+# that all of our expected partitions exists
 if [ $format -eq 0 ]; then
     expected_partitions=3
     for i in $(seq 1 $expected_partitions); do
@@ -107,7 +112,6 @@ confirm_file $artifacts/memory.map
 confirm_file $artifacts/sysid
 
 
-# If the user wants to format the SD card before putting files on it...
 # If the user wants to format the SD card before putting files on it...
 if [ $format -eq 1 ]; then
 
