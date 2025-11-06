@@ -103,6 +103,8 @@ confirm_file $artifacts/BOOT.BIN
 confirm_file $artifacts/boot.scr
 confirm_file $artifacts/image.ub
 confirm_file $artifacts/startup-script
+confirm_file $artifacts/memory.map
+confirm_file $artifacts/sysid
 
 
 # If the user wants to format the SD card before putting files on it...
