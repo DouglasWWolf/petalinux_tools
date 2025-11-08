@@ -204,7 +204,9 @@ dst=/media/sd$n
 mkdir -p      $dst
 mount ${SD}$n $dst
 test -f $dst/boot_bank || echo "1" >$dst/boot_bank
-mkdir -p $dst/bank0 $dst/bank1
+chmod 666 $dst/boot_bank
+mkdir  -p $dst/bank0 $dst/bank1
+chmod 777 $dst/bank0 $dst/bank1
 sleep 2;sync;sync
 umount ${SD}$n
 
