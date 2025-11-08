@@ -52,7 +52,7 @@ unique_id=$(date +"%Y%m%d%H%M%S")
 echo $unique_id >$dst/sysid
 
 # Now create a tarball of the artifacts folder
-tgz=${project_name}-{unique_id}.tgz
+tgz=${project_name}-${unique_id}.tgz
 cd $dst
 tar -czf ../$tgz *
 cd - >/dev/null
