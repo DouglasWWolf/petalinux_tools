@@ -110,6 +110,10 @@ fi
 # Set the FMC+ VADJ voltage to 1.5V
 program_fmc_vadj
 
+# Start up the logger and pause to let it start up
+/utils/radlogger.arm &
+sleep 1
+
 # Start up low-level NSE
 /utils/llnse.arm &
 
