@@ -1,9 +1,8 @@
 # Name of the tool we're going to use
-tool=../iotool/iotool.x86
+tool=iotool
 
 # This is a bitmask of the output pins
 output_mask=$((0x1F * 2**7))
-
 
 #====================================================================
 # get_value() - Turns a value string (like "on" or "off") into 
