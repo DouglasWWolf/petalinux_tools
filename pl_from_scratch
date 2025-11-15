@@ -191,7 +191,7 @@ update_xsa()
     find_xsa_file $xsa_dir
     
     echo "Copying $xsa_file to $target"
-    cp $xsa_file $target
+    cp $xsa_file ${target}/platform.xsa
     
     echo "Copying $memory_map_file to ${target}/artifacts"
     cp $memory_map_file ${target}/artifacts    
