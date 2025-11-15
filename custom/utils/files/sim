@@ -151,6 +151,9 @@ if [ -z $1 ]; then
     echo "sim config"
     echo "  : programs the MCP23017 registers for our hardware"
     echo 
+    echo 'ps200 <signed-integer>'
+    echo '  : Set the value that the PS200 pressure sensor reports'
+    echo
     echo 'sim get <pin-name>'
     echo 'sim set <pin-name> <pin-value>'
     echo 
@@ -160,7 +163,7 @@ if [ -z $1 ]; then
     echo "  pump1,      pump2,       valve1        valve2"
     echo "  service,    robot-power, door-lock,    robot-home"
     echo 
-    echo '<pin_value> can be:'
+    echo '<pin-value> can be:'
     echo '  0 (or keyword "off")'
     echo '  1 (or keyword "on")'
     echo
@@ -178,7 +181,17 @@ if [ "$1" == "get" ]; then
     exit 0
 fi
 
+if [ "$1" == "ps200" ]; then
+    if [ -z $2 ]; then
+        echo "missing-param" 1>&2
+        exit 1
+    fi
+    $tool ps200 emulate on $2
+    exit 0
+fi
+
 if [ "$1" == "config" ]; then
+    $tool ps200 emulate on 0
     $tool px0 emulate on 0
     $tool px0 gpio $((2 ** 7))
     $tool px0 iodir $((~output_mask))
@@ -186,6 +199,10 @@ if [ "$1" == "config" ]; then
 fi
 
 if [ "$1" == "init" ]; then
-    $tool px0 emulate on 0
+    $tool px0   emulate on 0
+    $tool ps200 emulate on 0
     exit 0
 fi
+
+# If we get here, we didn't recognize the command
+echo "syntax-error" 1>&2
