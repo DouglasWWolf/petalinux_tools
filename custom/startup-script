@@ -117,6 +117,16 @@ sleep 1
 # Start up low-level NSE
 /utils/llnse.arm &
 
+# See if there is an application script to launch
+boot_bank=$(cat /app/boot_bank)
+app_script=/app/bank${boot_bank}/start.sh
+if [ -x $app_script ]; then
+    echo "Launching $app_script"
+    $app_script &
+else
+    echo "Can't find our launch $app_script"
+fi
+
 # If this script exits, it will take the child processes we
 # just launched with it.   Don't allow this script to exit!
 sleep infinity
