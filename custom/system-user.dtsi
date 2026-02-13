@@ -5,3 +5,19 @@
 &pl_rtl_axi_intc_0 {
   compatible = "generic-uio";
 };
+
+
+
+/ {
+  reserved-memory {
+    #address-cells = <2>; // or <1> for 32-bit
+    #size-cells = <2>;    // or <1> for 32-bit
+    ranges;
+
+    // Define the reserved region
+    reserved_contiguous: buffer@0x100000000 {
+        no-map;
+        reg = <0x0 0x100000000 0x0 0x800000>; // Reserve 8MB at 0x1_0000_0000
+    };
+  };
+};
