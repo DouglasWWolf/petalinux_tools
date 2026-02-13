@@ -5,6 +5,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
 SRC_URI = "file://pcireg        \
+           file://physram       \
            file://asroot        \
            file://sim           \
            file://remount       \
@@ -23,6 +24,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 do_install() {
    install -m 755 -d                        ${D}/utils
    install -m 4755 ${WORKDIR}/pcireg        ${D}/utils
+   install -m 4755 ${WORKDIR}/physram       ${D}/utils
    install -m 755  ${WORKDIR}/asroot        ${D}/utils
    install -m 755  ${WORKDIR}/sim           ${D}/utils
    install -m 755  ${WORKDIR}/remount       ${D}/utils

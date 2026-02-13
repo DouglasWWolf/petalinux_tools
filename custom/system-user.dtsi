@@ -15,9 +15,9 @@
     ranges;
 
     // Define the reserved region
-    reserved_contiguous: buffer@0x100000000 {
+    reserved: buffer@0 {
         no-map;
-        reg = <0x0 0x100000000 0x0 0x800000>; // Reserve 8MB at 0x1_0000_0000
+        reg = <0x0 0x50000000000 0x0 0x800000>; // Reserve 8MB at 0x500_0000_0000
     };
   };
 };
