@@ -17,13 +17,13 @@ systemctl stop sshdgenkeys
 # mounted, we reboot to try again
 #
 partition_found=0
-for i in 1 2 3 4 5; do
+for i in 1 2 3 4 5 6 7 8 9 10; do
    sleep 2
    test -f /run/media/mmcblk0p1/BOOT.BIN   && partition_found=$((partition_found | 1))
    test -d /run/media/mmcblk0p2/lost+found && partition_found=$((partition_found | 2))
    test -d /run/media/mmcblk0p3/lost+found && partition_found=$((partition_found | 4))
    test $partition_found -eq 7 && break;
-   echo "Waiting for partitions to mount..."
+   echo "Waiting for partitions to mount (partition_found=${partition_found})..."
 done
 
 # If we didn't find our partitions, reboot

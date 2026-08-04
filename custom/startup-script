@@ -111,11 +111,11 @@ fi
 program_fmc_vadj
 
 # Start up the logger and pause to let it start up
-/utils/radlogger.arm &
-sleep 1
+#/utils/radlogger.arm &
+#sleep 1
 
 # Start up low-level NSE
-/utils/llnse.arm &
+#/utils/llnse.arm &
 
 # See if there is an application script to launch
 boot_bank=$(cat /app/boot_bank)

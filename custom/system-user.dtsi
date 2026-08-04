@@ -15,9 +15,17 @@
     ranges;
 
     // Define the reserved region
-    reserved: buffer@0 {
+    pl_ps_shm: buffer@800000000 {
         no-map;
-        reg = <0x0 0x50000000000 0x0 0x800000>; // Reserve 8MB at 0x500_0000_0000
+        /* Base High: 0x8, Base Low: 0x0 | Size High: 0x0, Size Low: 0x800000 (8MB) */
+        reg = <0x00000008 0x00000000 0x00000000 0x00800000>;
     };
   };
+
+/* The UIO device that points to it */
+    uio_pl_ps_shm_dev {
+        compatible = "generic-uio";
+        memory-region = <&pl_ps_shm>;
+        reg = <0x00000008 0x00000000 0x00000000 0x00800000>;
+    };
 };
