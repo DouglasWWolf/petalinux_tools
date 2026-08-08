@@ -136,6 +136,7 @@ configure_rootfs()
     set_param CONFIG_netcat        y
     set_param CONFIG_i2c-tools     y
     set_param CONFIG_i2c-tools-dev y
+    set_param CONFIG_bash          y
 
 }
 #===================================================================
